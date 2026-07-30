@@ -11,14 +11,37 @@ export async function onRequestPost(context) {
   const inputContent = await context.request.json();
   
   // Aquí pegas tu prompt y la lógica de `parts` que ya tienes...
-  const promptText = `Actúa como un sistema de transcripción...`; // tu prompt completo
+  const promptText = `Actúa como un sistema de transcripción y extracción de datos de alta precisión. Tu tarea es extraer y clasificar el texto del documento legal adjunto respetando FIELMENTE y TEXTUALMENTE el contenido original.
+
+  REGLAS STRICTAS:
+  1. NO resumas, NO interpretes, NO edites y NO omitas ningún fragmento del texto original.
+  2. Cero alucinaciones: Extrae únicamente la información que figure explícitamente en el documento. Si un dato no existe, deja el campo como un string vacío ("").
+  3. Para el campo "cuerpo", transcribe el texto completo de la carta documento de principio a fin, manteniendo la redacción, puntuación, fechas, cifras y términos legales exactamente como aparecen en el original.
   
+  Responde EXCLUSIVAMENTE con un objeto JSON válido con la siguiente estructura:
+  {
+    "remitente": {
+      "nombre": "",
+      "domicilio": "",
+      "cp": "",
+      "localidad": "",
+      "provincia": ""
+    },
+    "destinatario": {
+      "nombre": "",
+      "domicilio": "",
+      "cp": "",
+      "localidad": "",
+      "provincia": ""
+    },
+    "cuerpo": ""
+  }`;
   let parts = [];
   if (inputContent.inlineData) {
     parts.push({ inlineData: inputContent.inlineData });
     parts.push({ text: promptText });
   } else {
-    parts.push({ text: `\( {promptText}\n\n[CONTENIDO DEL DOCUMENTO WORD]:\n \){inputContent.text}` });
+    parts.push({ text: `${promptText}\n\n[CONTENIDO DEL DOCUMENTO WORD]:\n${inputContent.text}` });
   }
   
   const response = await fetch(endpoint, {
