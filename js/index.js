@@ -211,7 +211,7 @@ function fileToBase64(file) {
 }
 
 async function callGeminiExtractionAPI(inputContent) {
-    // Feedback visual opcional
+    // Feedback visual al usuario
     document.body.style.cursor = 'wait';
     
     try {
@@ -221,17 +221,25 @@ async function callGeminiExtractionAPI(inputContent) {
             body: JSON.stringify(inputContent)
         });
         
-        if (!response.ok) throw new Error("Error al extraer datos");
+        // Intentamos parsear la respuesta (sea de éxito o de error)
+        const data = await response.json();
         
-        const structuredData = await response.json();
-        populateFormWithExtractedData(structuredData);
+        if (!response.ok) {
+            // Si el backend devolvió { message: "..." }, lo usamos para el error
+            throw new Error(data.message || `Error en el servidor (${response.status})`);
+        }
+        
+        // Si salió todo bien, poblamos el formulario
+        populateFormWithExtractedData(data);
+        
     } catch (error) {
-        console.error(error);
-        alert("Hubo un problema comunicándose con la IA.");
+        console.error("Error al procesar con IA:", error);
+        alert(`Hubo un problema al procesar el documento: ${error.message}`);
     } finally {
         document.body.style.cursor = 'default';
     }
 }
+
 
 function populateFormWithExtractedData(data) {
     if (data.remitente) {
