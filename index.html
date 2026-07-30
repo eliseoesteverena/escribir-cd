@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>escribirCD | Inicio</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Geist', 'sans-serif'] },
+                    colors: {
+                        primary: '#0f172a',
+                        'primary-light': '#f8fafc',
+                        accent: '#2563eb'
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-50 text-gray-900 flex flex-col min-h-screen">
+
+    <header class="w-full bg-white border-b border-gray-100 sticky top-0 z-50">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="h-16 flex items-center justify-between">
+                
+                <!-- Logo -->
+                <a href="./" class="flex items-center shrink-0">
+                    <span class="text-xl font-extrabold tracking-tight text-gray-900">
+                        escribir<span class="text-blue-600">CD</span>
+                    </span>
+                </a>
+
+                <!-- Navegación Desktop -->
+                <nav class="hidden md:flex items-center space-x-6 text-sm font-medium text-gray-600">
+                    <a href="cd.html" class="hover:text-blue-600 transition-colors">Formulario</a>
+                    <a href="ayuda.html" class="hover:text-blue-600 transition-colors">Cómo se completa</a>
+                </nav>
+
+                <!-- Botón Menú Hamburguesa (Móvil) -->
+                <button id="btn-mobile-menu" type="button" class="md:hidden p-2 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-100 focus:outline-none transition-colors" aria-label="Abrir menú">
+                    <!-- Ícono Hamburguesa (3 líneas) -->
+                    <svg id="icon-hamburger" class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"></path>
+                    </svg>
+                    <!-- Ícono Cerrar (X) -->
+                    <svg id="icon-close" class="w-6 h-6 hidden" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+
+            </div>
+        </div>
+
+        <!-- Menú Desplegable Móvil -->
+        <div id="mobile-menu" class="w-full absolute hidden md:hidden border-t border-gray-100 bg-white px-4 pt-2 pb-4 space-y-1 shadow-lg">
+            <a href="cd.html" class="block px-3 py-2.5 rounded-lg text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50 transition-colors">
+                Formulario
+            </a>
+            <a href="ayuda.html" class="block px-3 py-2.5 rounded-lg text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50 transition-colors">
+                Cómo se completa
+            </a>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <main class="flex-grow">
+        <section class="container mx-auto px-6 py-16 max-w-5xl text-center">
+            <h1 class="text-4xl md:text-5xl font-extrabold mb-6 tracking-tight text-primary">
+                Imprimí Cartas Documento sin errores de alineación
+            </h1>
+            <p class="text-lg text-gray-600 mb-10 max-w-2xl mx-auto leading-relaxed">
+                Generá un PDF con las medidas exactas para imprimir directamente sobre los formularios oficiales de Correo Argentino y Andreani.
+            </p>
+            <div class="flex flex-col sm:flex-row justify-center gap-4">
+                <a href="cd.html" class="bg-accent hover:bg-blue-700 text-white font-medium py-3 px-8 rounded-lg transition-colors shadow-sm">
+                    Generar Carta Documento
+                </a>
+                <a href="ayuda.html" class="bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-medium py-3 px-8 rounded-lg transition-colors shadow-sm">
+                    Ver Instructivo
+                </a>
+            </div>
+        </section>
+
+        <!-- Features -->
+        <section class="bg-white border-y py-16">
+            <div class="container mx-auto px-6 max-w-5xl">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-10">
+                    
+                    <!-- Feature 1 -->
+                    <div class="text-left">
+                        <div class="w-12 h-12 bg-primary-light text-accent rounded-xl flex items-center justify-center mb-4 border">
+                            <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"></path></svg>
+                        </div>
+                        <h3 class="text-lg font-bold mb-2">Márgenes Calibrados</h3>
+                        <p class="text-gray-600 text-sm leading-relaxed">
+                            Diseñado específicamente para que el texto encaje a la perfección en los campos del formulario físico (triplicado) sin pisar las líneas.
+                        </p>
+                    </div>
+
+                    <!-- Feature 2 -->
+                    <div class="text-left">
+                        <div class="w-12 h-12 bg-primary-light text-accent rounded-xl flex items-center justify-center mb-4 border">
+                            <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><polyline points="13 2 13 9 20 9"></polyline></svg>
+                        </div>
+                        <h3 class="text-lg font-bold mb-2">Asistente Inteligente</h3>
+                        <p class="text-gray-600 text-sm leading-relaxed">
+                            Subí tu documento Word o pegá el texto en bruto. Nuestra integración extrae automáticamente los datos del remitente y destinatario.
+                        </p>
+                    </div>
+
+                    <!-- Feature 3 -->
+                    <div class="text-left">
+                        <div class="w-12 h-12 bg-primary-light text-accent rounded-xl flex items-center justify-center mb-4 border">
+                            <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                        </div>
+                        <h3 class="text-lg font-bold mb-2">Soporte Multicorreo</h3>
+                        <p class="text-gray-600 text-sm leading-relaxed">
+                            Generá la vista previa y el PDF final optimizado tanto para las planillas de Correo Argentino como para las de Andreani con un solo clic.
+                        </p>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-50 py-8 border-t text-center text-sm text-gray-500">
+        <p>© 2026 escribirCD. Herramienta de uso libre.</p>
+    </footer>
+
+    <script src="js/nav.js"></script>
+</body>
+</html>
