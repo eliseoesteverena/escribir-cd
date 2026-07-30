@@ -308,10 +308,10 @@ quill.formatText(0, quill.getLength(), {
     'size': DEFAULT_SIZE,
     'line-height': DEFAULT_LINE_HEIGHT
 });
-quill.setSelection(0, 0);
+// quill.setSelection(0, 0);
 quill.format('size', DEFAULT_SIZE);
 quill.format('line-height', DEFAULT_LINE_HEIGHT);
-quill.blur()
+// quill.blur()
 
 // =============================================================
 // 6. GENERADOR DE PDF Y RASTERIZADO (jsPDF + html2canvas)
