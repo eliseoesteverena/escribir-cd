@@ -312,7 +312,7 @@ quill.formatText(0, quill.getLength(), {
 quill.format('size', DEFAULT_SIZE);
 quill.format('line-height', DEFAULT_LINE_HEIGHT);
 quill.blur()
-window.scrollTo(0, 0);
+window.scrollTo(0, 0);.
 // =============================================================
 // 6. GENERADOR DE PDF Y RASTERIZADO (jsPDF + html2canvas)
 // =============================================================
@@ -347,7 +347,7 @@ async function generatePDF(correo, output = 'pdf') {
     const config = {
         nombre_rt: {
             sizesAndPos: {
-                cd_correo_arg: { x: 2.54, y: 3, width: 8.13, height: 1.26 },
+                cd_correo_arg: { x: 2.54, y: 3, width: 8.12, height: 1.26 },
                 cd_correo_andreani: { x: 1.37, y: 2.86, width: 9.3, height: 0.5 }
             }, text: datos.nombre_rt
         },
@@ -389,19 +389,19 @@ async function generatePDF(correo, output = 'pdf') {
         },
         cp_dt: {
             sizesAndPos: {
-                cd_correo_arg: { x: 10.9, y: 5.56, width: 2.3, height: 0.47 },
+                cd_correo_arg: { x: 10.9, y: 5.56, width: 2.3, height: 0.5 },
                 cd_correo_andreani: { x: 11.58, y: 4.6, width: 1.5, height: 0.5 }
             }, text: datos.cp_dt
         },
         localidad_dt: {
             sizesAndPos: {
-                cd_correo_arg: { x: 13.4, y: 5.56, width: 2.92, height: 0.47 },
+                cd_correo_arg: { x: 13.4, y: 5.56, width: 2.92, height: 0.5 },
                 cd_correo_andreani: { x: 13.19, y: 4.6, width: 2.96, height: 0.5 }
             }, text: datos.localidad_dt
         },
         provincia_dt: {
             sizesAndPos: {
-                cd_correo_arg: { x: 16.4, y: 5.56, width: 2.57, height: 0.47 },
+                cd_correo_arg: { x: 16.4, y: 5.56, width: 2.57, height: 0.5 },
                 cd_correo_andreani: { x: 16.21, y: 4.6, width: 4.67, height: 0.5 }
             }, text: datos.provincia_dt
         },
@@ -419,19 +419,19 @@ async function generatePDF(correo, output = 'pdf') {
         },
         cp_rt_bis: {
             sizesAndPos: {
-                cd_correo_arg: { x: 2.55, y: 14.96, width: 2.3, height: 0.47 },
+                cd_correo_arg: { x: 2.55, y: 14.96, width: 2.3, height: 0.5 },
                 cd_correo_andreani: { x: 1.37, y: 11.93, width: 1.5, height: 0.5 }
             }, text: datos.cp_rt_bis
         },
         localidad_rt_bis: {
             sizesAndPos: {
-                cd_correo_arg: { x: 5, y: 14.96, width: 2.92, height: 0.47 },
+                cd_correo_arg: { x: 5, y: 14.96, width: 2.92, height: 0.5 },
                 cd_correo_andreani: { x: 2.98, y: 11.93, width: 2.96, height: 0.5 }
             }, text: datos.localidad_rt_bis
         },
         provincia_rt_bis: {
             sizesAndPos: {
-                cd_correo_arg: { x: 8, y: 14.96, width: 2.57, height: 0.47 },
+                cd_correo_arg: { x: 8, y: 14.96, width: 2.57, height: 0.5 },
                 cd_correo_andreani: { x: 6, y: 11.93, width: 4.67, height: 0.5 }
             }, text: datos.provincia_rt_bis
         },
@@ -449,25 +449,26 @@ async function generatePDF(correo, output = 'pdf') {
         },
         cp_dt_bis: {
             sizesAndPos: {
-                cd_correo_arg: { x: 10.9, y: 14.96, width: 2.3, height: 0.47 },
+                cd_correo_arg: { x: 10.9, y: 14.96, width: 2.3, height: 0.5
+                },
                 cd_correo_andreani: { x: 11.58, y: 11.93, width: 1.5, height: 0.5 }
             }, text: datos.cp_dt_bis
         },
         localidad_dt_bis: {
             sizesAndPos: {
-                cd_correo_arg: { x: 13.4, y: 14.96, width: 2.92, height: 0.47 },
+                cd_correo_arg: { x: 13.4, y: 14.96, width: 2.92, height: 0.5 },
                 cd_correo_andreani: { x: 13.19, y: 11.93, width: 2.96, height: 0.5 }
             }, text: datos.localidad_dt_bis
         },
         provincia_dt_bis: {
             sizesAndPos: {
-                cd_correo_arg: { x: 16.4, y: 14.96, width: 2.57, height: 0.47 },
+                cd_correo_arg: { x: 16.4, y: 14.96, width: 2.57, height: 0.5 },
                 cd_correo_andreani: { x: 16.21, y: 11.93, width: 4.67, height: 0.5 }
             }, text: datos.provincia_dt_bis
         },
         cuerpo_cd: {
             sizesAndPos: {
-                cd_correo_arg: { x: 1.7, y: 15.8, width: 18, height: 13.5 },
+                cd_correo_arg: { x: 1.7, y: 15.8, width: 17.9, height: 13.5 },
                 cd_correo_andreani: { x: 0.8, y: 12.95, width: 19, height: 17.7 }
             }, text: datos.cuerpo_cd
         }
