@@ -43,6 +43,18 @@
 
     
     <style>
+        :root {
+            /* Ancho real de impresión del cuerpo de la carta. Ajustable acá
+               mientras prueban — lo usa el toggle "Diseño de impresión". */
+            --print-preview-width: 19cm;
+        }
+
+        /* Backstop: ningún descendiente puede forzar scroll horizontal
+           de la página completa, sin importar dónde se origine. */
+        html, body {
+            overflow-x: hidden;
+        }
+
         .container {
             max-width:19cm;
         }
@@ -82,6 +94,27 @@
         #editor .ql-editor {
             font-size: 10pt;
             line-height: 1.15;
+            overflow-wrap: anywhere;
+            word-break: break-word;
+            max-width: 100%;
+        }
+
+        /* Wrapper cuyo ancho alterna el toggle "Diseño de impresión" */
+        #editor-width-wrapper {
+            width: 100%;
+            max-width: 100%;
+            transition: width 0.2s ease-in-out;
+        }
+        #editor-width-wrapper.print-preview-active {
+            width: var(--print-preview-width);
+            max-width: none;
+        }
+
+        /* Solo esta franja hace scroll horizontal cuando el ancho de
+           impresión no entra en la pantalla — nunca la página entera. */
+        #editor-scroll-container {
+            overflow-x: auto;
+            width: 100%;
         }
 
     </style>
@@ -241,9 +274,22 @@
         </div><!-- /panel 2 -->
 
         <div data-step-panel="3" class="hidden">
-            <h3 class="font-bold text-gray-800 mb-3">Cuerpo de la Carta Documento</h3>
-            <div class="bg-white border rounded-xl shadow-sm mb-8 w-full">
-                <div id="editor"></div>
+            <div class="flex items-center justify-between mb-3 gap-3 flex-wrap">
+                <h3 class="font-bold text-gray-800">Cuerpo de la Carta Documento</h3>
+                <label class="inline-flex items-center gap-2 text-sm text-gray-600 cursor-pointer select-none shrink-0">
+                    <span>Diseño de impresión</span>
+                    <span class="relative inline-block w-10 h-5 shrink-0">
+                        <input type="checkbox" id="print-preview-toggle" class="peer sr-only">
+                        <span class="absolute inset-0 rounded-full bg-gray-300 peer-checked:bg-blue-600 transition-colors pointer-events-none"></span>
+                        <span class="absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform peer-checked:translate-x-5 pointer-events-none"></span>
+                    </span>
+                </label>
+            </div>
+            <p class="text-xs text-gray-400 mb-3" id="print-preview-hint">Activá el switch para ver el ancho real de impresión (podés deslizar el dedo para recorrerlo).</p>
+            <div id="editor-scroll-container" class="mb-8">
+                <div class="bg-white border rounded-xl shadow-sm" id="editor-width-wrapper">
+                    <div id="editor"></div>
+                </div>
             </div>
         </div><!-- /panel 3 -->
 

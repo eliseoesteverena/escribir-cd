@@ -161,4 +161,36 @@
     });
 
     renderStep();
+
+    // ---------------------------------------------------------------
+    // Toggle "Diseño de impresión": alterna el ancho del editor entre
+    // 100% (cómodo para escribir en el celular) y el ancho real de
+    // impresión, tomado de la variable CSS --print-preview-width
+    // (definida en el <style> de cd.html — cambiar solo esa línea
+    // para probar otros valores).
+    // ---------------------------------------------------------------
+    const printToggle = document.getElementById('print-preview-toggle');
+    const editorWidthWrapper = document.getElementById('editor-width-wrapper');
+    const printPreviewHint = document.getElementById('print-preview-hint');
+
+    if (printToggle && editorWidthWrapper) {
+        const printWidthValue = getComputedStyle(document.documentElement)
+            .getPropertyValue('--print-preview-width')
+            .trim();
+
+        if (printPreviewHint && printWidthValue) {
+            printPreviewHint.dataset.offText = printPreviewHint.textContent;
+            printPreviewHint.dataset.onText = `Viendo el ancho real de impresión (${printWidthValue}). Deslizá para recorrerlo.`;
+        }
+
+        printToggle.addEventListener('change', () => {
+            const active = printToggle.checked;
+            editorWidthWrapper.classList.toggle('print-preview-active', active);
+            if (printPreviewHint) {
+                printPreviewHint.textContent = active
+                    ? printPreviewHint.dataset.onText
+                    : printPreviewHint.dataset.offText;
+            }
+        });
+    }
 })();
