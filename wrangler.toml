@@ -1,0 +1,12 @@
+name = "escribir-cd"
+compatibility_date = "2026-08-20"
+
+# Le indica a Wrangler que este es un proyecto de Pages y dónde está el
+# resultado del build de Vite (ver vite.config.js -> build.outDir).
+pages_build_output_dir = "dist"
+
+[[d1_databases]]
+binding = "DB"                     # así se accede en las Functions: context.env.DB
+database_name = "escribir-cd-db"
+database_id = "c43e7c77-8d08-4c1b-8dae-3c063fea63dc"  # ver instrucciones: wrangler d1 create
+migrations_dir = "drizzle"         # carpeta donde drizzle-kit genera el SQL
