@@ -132,8 +132,33 @@
     </header>
 
     <main class="container mx-auto px-4 max-w-5xl pb-12 py-3">
-        <h1 class="text-2xl font-bold mb-6 text-primary">Completar Formulario</h1>
+        <h1 class="text-2xl font-bold mb-1 text-primary">Completar Formulario</h1>
+        <p class="text-sm text-gray-500 mb-6" id="wizard-subtitle">Paso 1 de 4 — Datos del Remitente</p>
 
+        <!-- Stepper -->
+        <ol class="flex items-center w-full mb-8" id="wizard-stepper">
+            <li class="flex items-center flex-1" data-stepper-item="1">
+                <span class="flex items-center justify-center w-8 h-8 rounded-full border-2 text-sm font-semibold shrink-0" data-stepper-circle>1</span>
+                <span class="ml-2 text-sm font-medium hidden sm:inline" data-stepper-label>Remitente</span>
+                <div class="flex-1 h-0.5 bg-gray-200 mx-3" data-stepper-line></div>
+            </li>
+            <li class="flex items-center flex-1" data-stepper-item="2">
+                <span class="flex items-center justify-center w-8 h-8 rounded-full border-2 text-sm font-semibold shrink-0" data-stepper-circle>2</span>
+                <span class="ml-2 text-sm font-medium hidden sm:inline" data-stepper-label>Destinatario</span>
+                <div class="flex-1 h-0.5 bg-gray-200 mx-3" data-stepper-line></div>
+            </li>
+            <li class="flex items-center flex-1" data-stepper-item="3">
+                <span class="flex items-center justify-center w-8 h-8 rounded-full border-2 text-sm font-semibold shrink-0" data-stepper-circle>3</span>
+                <span class="ml-2 text-sm font-medium hidden sm:inline" data-stepper-label>Cuerpo</span>
+                <div class="flex-1 h-0.5 bg-gray-200 mx-3" data-stepper-line></div>
+            </li>
+            <li class="flex items-center" data-stepper-item="4">
+                <span class="flex items-center justify-center w-8 h-8 rounded-full border-2 text-sm font-semibold shrink-0" data-stepper-circle>4</span>
+                <span class="ml-2 text-sm font-medium hidden sm:inline" data-stepper-label>Descarga</span>
+            </li>
+        </ol>
+
+        <div data-step-panel="1">
         <!-- Top-Bar IA (Responsive) -->
         <div class="bg-blue-50 border border-blue-100 rounded-xl p-4 mb-8 flex flex-col sm:flex-row items-start sm:items-center gap-4 text-sm text-gray-800 shadow-sm">
             <div class="flex-shrink-0 bg-blue-100 p-2.5 rounded-full text-blue-600">
@@ -154,8 +179,7 @@
             <input type="file" id="topbar-file-input" accept=".pdf,.docx,.doc" class="hidden">
         </div>
 
-        <div class="flex flex-col gap-6 mb-8">
-            <!-- Sección Remitente -->
+        <!-- Sección Remitente -->
             <section class="bg-white border rounded-xl p-5 shadow-sm">
                 <h3 class="font-bold text-gray-800 mb-4 pb-2 border-b">Datos del Remitente</h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
@@ -183,7 +207,9 @@
                     </div>
                 </div>
             </section>
+        </div><!-- /panel 1 -->
 
+        <div data-step-panel="2" class="hidden">
             <!-- Sección Destinatario -->
             <section class="bg-white border rounded-xl p-5 shadow-sm">
                 <h3 class="font-bold text-gray-800 mb-4 pb-2 border-b">Datos del Destinatario</h3>
@@ -212,15 +238,21 @@
                     </div>
                 </div>
             </section>
-        </div>
+        </div><!-- /panel 2 -->
 
-        <h3 class="font-bold text-gray-800 mb-3">Cuerpo de la Carta Documento</h3>
-        <div class="bg-white border rounded-xl shadow-sm mb-8" style="min-width:22cm;">
-            <div id="editor"></div>
-        </div>
+        <div data-step-panel="3" class="hidden">
+            <h3 class="font-bold text-gray-800 mb-3">Cuerpo de la Carta Documento</h3>
+            <div class="bg-white border rounded-xl shadow-sm mb-8 w-full">
+                <div id="editor"></div>
+            </div>
+        </div><!-- /panel 3 -->
 
-        <!-- Botones de Acción -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div data-step-panel="4" class="hidden">
+            <div class="bg-emerald-50 border border-emerald-100 rounded-xl p-4 mb-6 text-sm text-emerald-900">
+                Revisá que los datos estén completos y elegí el correo con el que vas a presentar la Carta Documento.
+            </div>
+            <!-- Botones de Acción -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             
             <!-- Grupo Andreani -->
             <div class="flex rounded-lg overflow-hidden shadow-sm border border-red-200">
@@ -249,6 +281,19 @@
                     </svg>
                 </button>
             </div>
+        </div>
+        </div><!-- /panel 4 -->
+
+        <p id="wizard-error" class="hidden text-sm text-red-600 mt-6"></p>
+        <div class="flex items-center justify-between mt-3">
+            <button type="button" id="wizard-btn-prev" class="hidden inline-flex items-center gap-2 px-4 py-2.5 rounded-lg border border-gray-300 text-gray-700 font-medium hover:bg-gray-50 transition-colors">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"></path></svg>
+                Anterior
+            </button>
+            <button type="button" id="wizard-btn-next" class="ml-auto inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium transition-colors">
+                Siguiente
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"></path></svg>
+            </button>
         </div>
     </main>
 
@@ -356,6 +401,7 @@
     </script>
     <script src="js/nav.js"></script>
     <script src="js/index.js"></script>
+    <script src="js/wizard.js"></script>
     <script>
     //    document.getElementById("nombre_rt").focus();
     </script>
