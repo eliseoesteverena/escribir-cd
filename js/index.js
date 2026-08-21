@@ -486,7 +486,7 @@ async function generatePDF(correo, output = 'pdf') {
     container.style.zIndex = '99999';
     document.body.appendChild(container);
 
-    for (const fieldName in config) {
+        for (const fieldName in config) {
         const field = config[fieldName];
         const pos = field.sizesAndPos[correo];
         
@@ -497,13 +497,18 @@ async function generatePDF(correo, output = 'pdf') {
         div.style.width = `${pos.width}cm`;
         div.style.height = `${pos.height}cm`;
         div.style.fontSize = '9pt';
-        div.style.lineHeight = '1.2';
-        div.style.overflow = 'hidden';
+        
+        // MODIFICACIONES CLAVE AQUÍ:
+        div.style.lineHeight = '1.35';     // 1. Aumentamos el interlineado para darle aire a la base
+        div.style.overflow = 'visible';    // 2. Evitamos que corte estrictamente el borde inferior
+        
         div.style.backgroundColor = '#ffffff'; 
         div.style.color = '#000000';
 
         if (fieldName === 'cuerpo_cd') {
             div.style.fontSize = '12pt';
+            // Volvemos a ocultar el desborde SOLO para el cuerpo principal, para que no pise los márgenes
+            div.style.overflow = 'hidden'; 
             div.innerHTML = field.text; 
         } else {
             div.textContent = field.text;
@@ -511,6 +516,7 @@ async function generatePDF(correo, output = 'pdf') {
 
         container.appendChild(div);
     }
+
 
     try {
         const canvas = await html2canvas(container, {
