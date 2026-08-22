@@ -19,6 +19,12 @@ export async function onRequest(context) {
             message: 'La función se ejecutó. BetterAuth devolvió 404 internamente.',
             path: url.pathname,
             params: context.params,
+            env_check: {
+                BETTER_AUTH_URL: context.env.BETTER_AUTH_URL || '(no configurada)',
+                BETTER_AUTH_SECRET: context.env.BETTER_AUTH_SECRET
+                    ? `configurada (${context.env.BETTER_AUTH_SECRET.length} caracteres)`
+                    : '(no configurada)',
+            },
         }, null, 2), { status: 404, headers: { 'Content-Type': 'application/json' } });
     }
 
