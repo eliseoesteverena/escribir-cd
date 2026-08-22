@@ -40,6 +40,13 @@ export function createAuth(env: AuthEnv) {
         }),
         secret: env.BETTER_AUTH_SECRET,
         baseURL,
+        // Explícito a propósito: en varios setups (issues reportados en el
+        // repo de BetterAuth) el basePath no se autocompleta como
+        // '/api/auth' de forma confiable, y sin esto el handler HTTP
+        // devuelve 404 para todas las rutas aunque el resto de la config
+        // (adapter, DB, secret) esté perfecta — que es justo lo que
+        // estábamos viendo acá.
+        basePath: '/api/auth',
         emailAndPassword: {
             enabled: true,
             // La verificación de email queda para más adelante: requiere
