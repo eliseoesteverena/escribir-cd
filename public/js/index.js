@@ -1,12 +1,17 @@
 // =============================================================
 // 1. LÓGICA DEL MODAL DE VISTA PREVIA INMERSIVA
 // =============================================================
+// Se renderiza con PDF.js sobre un <canvas> en vez de un <iframe> con el
+// visor nativo del navegador: en Chrome de escritorio ese visor existe,
+// pero en Chrome/WebView de Android no hay visor de PDF embebido para
+// iframes, así que el preview quedaba en blanco.
 async function openPreviewModal(correoType) {
     const modal = document.getElementById('preview-modal');
     const modalContent = document.getElementById('preview-modal-content');
     const title = document.getElementById('modal-title');
-    const iframe = document.getElementById('pdf-preview-frame');
-    const downloadBtn = document.getElementById('modal-download-btn'); // Capturamos el botón
+    const wrapper = document.getElementById('pdf-preview-wrapper');
+    const canvas = document.getElementById('pdf-preview-canvas');
+    const downloadBtn = document.getElementById('modal-download-btn');
 
     // Actualizar título según la empresa
     title.textContent = `Vista Previa - ${correoType === 'cd_correo_andreani' ? 'Andreani' : 'Correo Argentino'}`;
@@ -23,28 +28,56 @@ async function openPreviewModal(correoType) {
         modalContent.classList.remove('scale-95');
     }, 10);
 
-    try {
-        iframe.style.backgroundColor = '#e5e7eb';
-        
-        // Generar la URL del Blob para la previsualización
-        const pdfBlobUrl = await generatePDF(correoType, 'bloburl');
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    wrapper.style.opacity = '0.4';
 
-        if (pdfBlobUrl) {
-            iframe.style.backgroundColor = '#ffffff';
-            iframe.src = pdfBlobUrl;
-        } else {
+    let pdfBlobUrl;
+    try {
+        // Generar la URL del Blob del PDF (misma función que usa la descarga)
+        pdfBlobUrl = await generatePDF(correoType, 'bloburl');
+
+        if (!pdfBlobUrl) {
             console.error('No se pudo generar el blob del PDF.');
+            return;
         }
+
+        const pdfDoc = await pdfjsLib.getDocument(pdfBlobUrl).promise;
+        const page = await pdfDoc.getPage(1);
+
+        // Escalamos para que la página entre en el ancho visible del modal
+        // (importante en celular, donde el modal ocupa casi toda la pantalla)
+        const availableWidth = Math.max(wrapper.parentElement.clientWidth - 32, 240);
+        const baseViewport = page.getViewport({ scale: 1 });
+        const scale = Math.min(availableWidth / baseViewport.width, 1.4);
+        const viewport = page.getViewport({ scale });
+
+        // Nitidez en pantallas de alta densidad (la mayoría de los celulares)
+        const outputScale = window.devicePixelRatio || 1;
+        canvas.width = Math.floor(viewport.width * outputScale);
+        canvas.height = Math.floor(viewport.height * outputScale);
+        canvas.style.width = `${Math.floor(viewport.width)}px`;
+        canvas.style.height = `${Math.floor(viewport.height)}px`;
+
+        await page.render({
+            canvasContext: ctx,
+            viewport,
+            transform: outputScale !== 1 ? [outputScale, 0, 0, outputScale, 0, 0] : null,
+        }).promise;
+
+        wrapper.style.opacity = '1';
     } catch (error) {
         console.error('Error al generar la vista previa:', error);
         alert("Hubo un error al generar la vista previa.");
+    } finally {
+        if (pdfBlobUrl) URL.revokeObjectURL(pdfBlobUrl);
     }
 }
 
 function closeModal() {
     const modal = document.getElementById('preview-modal');
     const modalContent = document.getElementById('preview-modal-content');
-    const iframe = document.getElementById('pdf-preview-frame');
+    const canvas = document.getElementById('pdf-preview-canvas');
 
     // Animación fade out
     modal.classList.add('opacity-0');
@@ -52,9 +85,8 @@ function closeModal() {
 
     setTimeout(() => {
         modal.classList.add('hidden');
-        if (iframe.src) {
-            URL.revokeObjectURL(iframe.src); // Liberar memoria del navegador
-            iframe.src = ''; 
+        if (canvas) {
+            canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
         }
     }, 300);
 }
@@ -210,9 +242,103 @@ function fileToBase64(file) {
     });
 }
 
+// =============================================================
+// TOASTS: feedback no bloqueante para operaciones asíncronas
+// =============================================================
+let toastContainerEl = null;
+let activeToastEl = null;
+let activeToastTimeout = null;
+
+function getToastContainer() {
+    if (!toastContainerEl) {
+        toastContainerEl = document.createElement('div');
+        toastContainerEl.id = 'toast-container';
+        Object.assign(toastContainerEl.style, {
+            position: 'fixed',
+            left: '50%',
+            bottom: '1.5rem',
+            transform: 'translateX(-50%)',
+            zIndex: '999999',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '0.5rem',
+            pointerEvents: 'none',
+            maxWidth: '92vw',
+        });
+        document.body.appendChild(toastContainerEl);
+    }
+    return toastContainerEl;
+}
+
+const TOAST_STYLES = {
+    loading: { bg: '#1e293b', icon: '<svg class="animate-spin" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" d="M21 12a9 9 0 1 1-9-9"></path></svg>' },
+    success: { bg: '#059669', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>' },
+    error:   { bg: '#dc2626', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>' },
+};
+
+// duration=0 deja el toast visible hasta que otra llamada lo reemplace
+// (útil para el estado "loading" mientras esperamos una respuesta).
+function showToast(message, type = 'loading', duration = 3000) {
+    const container = getToastContainer();
+    const style = TOAST_STYLES[type] || TOAST_STYLES.loading;
+
+    if (activeToastTimeout) {
+        clearTimeout(activeToastTimeout);
+        activeToastTimeout = null;
+    }
+    if (activeToastEl) {
+        activeToastEl.remove();
+        activeToastEl = null;
+    }
+
+    const toast = document.createElement('div');
+    Object.assign(toast.style, {
+        display: 'flex',
+        alignItems: 'center',
+        gap: '0.5rem',
+        padding: '0.6rem 1rem',
+        borderRadius: '9999px',
+        color: '#ffffff',
+        fontSize: '0.875rem',
+        fontWeight: '500',
+        backgroundColor: style.bg,
+        boxShadow: '0 10px 25px -5px rgba(0,0,0,0.35)',
+        pointerEvents: 'auto',
+        opacity: '0',
+        transform: 'translateY(8px)',
+        transition: 'opacity 0.2s ease, transform 0.2s ease',
+    });
+    toast.innerHTML = `${style.icon}<span></span>`;
+    toast.querySelector('span').textContent = message;
+
+    container.appendChild(toast);
+    activeToastEl = toast;
+
+    requestAnimationFrame(() => {
+        toast.style.opacity = '1';
+        toast.style.transform = 'translateY(0)';
+    });
+
+    if (duration > 0) {
+        activeToastTimeout = setTimeout(() => {
+            toast.style.opacity = '0';
+            toast.style.transform = 'translateY(8px)';
+            setTimeout(() => {
+                toast.remove();
+                if (activeToastEl === toast) activeToastEl = null;
+            }, 200);
+        }, duration);
+    }
+
+    return toast;
+}
+
+
 async function callGeminiExtractionAPI(inputContent) {
     // Feedback visual al usuario
     document.body.style.cursor = 'wait';
+    showToast('Analizando documento con IA…', 'loading', 0);
     
     try {
         const response = await fetch("/api/extract", {
@@ -231,10 +357,11 @@ async function callGeminiExtractionAPI(inputContent) {
         
         // Si salió todo bien, poblamos el formulario
         populateFormWithExtractedData(data);
+        showToast('Datos completados con IA ✓', 'success', 3000);
         
     } catch (error) {
         console.error("Error al procesar con IA:", error);
-        alert(`Hubo un problema al procesar el documento: ${error.message}`);
+        showToast(`No se pudo procesar el documento: ${error.message}`, 'error', 4500);
     } finally {
         document.body.style.cursor = 'default';
     }
@@ -313,6 +440,20 @@ quill.format('size', DEFAULT_SIZE);
 quill.format('line-height', DEFAULT_LINE_HEIGHT);
 quill.blur()
 window.scrollTo(0, 0);
+
+// El toolbar tiene overflow-x:auto para poder scrollear en mobile (ver CSS
+// en cd.html). Eso recorta cualquier cosa que se salga verticalmente de su
+// caja — incluidos los desplegables de tamaño/interlineado. Mientras un
+// picker está abierto, sacamos el recorte para que no se corte.
+document.querySelectorAll('.ql-toolbar.ql-snow').forEach((toolbar) => {
+    const pickerObserver = new MutationObserver(() => {
+        const hasExpanded = toolbar.querySelector('.ql-picker.ql-expanded');
+        toolbar.classList.toggle('ql-toolbar-picker-open', Boolean(hasExpanded));
+    });
+    toolbar.querySelectorAll('.ql-picker').forEach((picker) => {
+        pickerObserver.observe(picker, { attributes: true, attributeFilter: ['class'] });
+    });
+});
 // =============================================================
 // 6. GENERADOR DE PDF Y RASTERIZADO (jsPDF + html2canvas)
 // =============================================================

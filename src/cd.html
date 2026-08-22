@@ -22,6 +22,12 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script>
+        // Render del preview vía canvas (ver public/js/index.js) en vez del
+        // iframe nativo: el visor de PDF embebido de Chrome no existe en mobile.
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    </script>
 
     
       <script type="application/ld+json">
@@ -61,6 +67,31 @@
         /* Ajustes básicos para el editor */
         #editor { min-height: 250px; background: white; border-radius: 0 0 0.5rem 0.5rem; }
         .ql-toolbar { background: #f8fafc; border-radius: 0.5rem 0.5rem 0 0; }
+
+        /* Toolbar con scroll horizontal contenido: en mobile no entran todos
+           los botones. Se desliza en vez de desbordar la página, sin mostrar
+           la barra de scroll, con un desvanecido en los bordes como pista visual. */
+        .ql-toolbar.ql-snow {
+            overflow-x: auto;
+            overflow-y: hidden;
+            white-space: nowrap;
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+            -webkit-mask-image: linear-gradient(to right, transparent 0, black 20px, black calc(100% - 20px), transparent 100%);
+            mask-image: linear-gradient(to right, transparent 0, black 20px, black calc(100% - 20px), transparent 100%);
+        }
+        .ql-toolbar.ql-snow::-webkit-scrollbar {
+            display: none;
+        }
+        .ql-toolbar.ql-snow .ql-formats {
+            display: inline-block;
+            vertical-align: top;
+        }
+        /* Mientras un picker (tamaño/interlineado) está abierto, el toolbar
+           deja de recortar overflow para que el desplegable no quede cortado. */
+        .ql-toolbar.ql-snow.ql-toolbar-picker-open {
+            overflow: visible;
+        }
         input[type="text"] { width: 100%; padding: 0.5rem; border: 1px solid #e2e8f0; border-radius: 0.375rem; margin-top: 0.25rem; font-size: 0.875rem; }
         input[type="text"]:focus { outline: none; border-color: #2563eb; ring: 2px solid #bfdbfe; }
         label { font-size: 0.875rem; font-weight: 500; color: #334155; }
@@ -377,74 +408,15 @@
                 </div>
             </div>
 
-            <!-- Modal Body (Iframe) -->
+            <!-- Modal Body (Canvas de PDF.js, renderiza igual en desktop y mobile) -->
             <div class="flex-1 bg-gray-200 p-4 sm:p-8 flex justify-center overflow-auto">
-                <!-- Se le da un max-width de A4 aprox para simular visualmente el papel -->
-                <iframe id="pdf-preview-frame" class="w-full max-w-[210mm] h-[297mm] bg-white shadow-lg border-0 rounded-sm" src=""></iframe>
+                <div class="bg-white shadow-lg rounded-sm" id="pdf-preview-wrapper">
+                    <canvas id="pdf-preview-canvas" class="block"></canvas>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Inicialización de Quill y Lógica del Modal -->
-    <script>
-        // =========================================
-        // Lógica del Modal de Vista Previa
-        // =========================================
-        function openPreviewModal(correoType) {
-            const modal = document.getElementById('preview-modal');
-            const modalContent = document.getElementById('preview-modal-content');
-            const title = document.getElementById('modal-title');
-
-            // Actualizar título según la empresa
-            title.textContent = `Vista Previa - ${correoType === 'andreani' ? 'Andreani' : 'Correo Argentino'}`;
-
-            // Mostrar el modal (animación fade in)
-            modal.classList.remove('hidden');
-            // Timeout muy corto para permitir que el display:block se aplique antes de animar opacidad
-            setTimeout(() => {
-                modal.classList.remove('opacity-0');
-                modalContent.classList.remove('scale-95');
-            }, 10);
-
-            // ==========================================
-            // ACÁ VA LA INTEGRACIÓN CON TU SCRIPT JSPDF
-            // ==========================================
-            /* 
-            Ejemplo de cómo inyectar el PDF generado en el iframe sin salir de la página:
-            
-            const doc = new jspdf.jsPDF();
-            // ... (acá armás todo el texto, coordenadas, márgenes, etc.) ...
-            
-            // En vez de doc.save(), sacás el blob:
-            const pdfBlob = doc.output('blob');
-            const pdfUrl = URL.createObjectURL(pdfBlob);
-            
-            // Lo pasás al iframe:
-            document.getElementById('pdf-preview-frame').src = pdfUrl;
-            */
-        }
-
-        function closeModal() {
-            const modal = document.getElementById('preview-modal');
-            const modalContent = document.getElementById('preview-modal-content');
-
-            // Animación fade out
-            modal.classList.add('opacity-0');
-            modalContent.classList.add('scale-95');
-
-            setTimeout(() => {
-                modal.classList.add('hidden');
-                document.getElementById('pdf-preview-frame').src = ''; // Limpiar iframe para liberar memoria
-            }, 300);
-        }
-
-        // Cerrar modal con la tecla ESC
-        document.addEventListener('keydown', function(event) {
-            if (event.key === "Escape" && !document.getElementById('preview-modal').classList.contains('hidden')) {
-                closeModal();
-            }
-        });
-    </script>
     <script src="js/nav.js"></script>
     <script src="js/index.js"></script>
     <script src="js/wizard.js"></script>
