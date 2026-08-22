@@ -1,8 +1,10 @@
 import { betterAuth } from 'better-auth';
-import { drizzleAdapter } from '@better-auth/drizzle-adapter';
-// Si el import de arriba falla al instalar dependencias (nombre de paquete
-// distinto según la versión de BetterAuth), reemplazar por:
-//   import { drizzleAdapter } from 'better-auth/adapters/drizzle';
+import { drizzleAdapter } from 'better-auth/adapters/drizzle';
+// Nota: este import viene empaquetado junto con `betterAuth()` en el mismo
+// release, así que no puede desincronizarse de versión con el core (a
+// diferencia de instalar @better-auth/drizzle-adapter como paquete aparte).
+// Si esta ruta de import no existe en la versión que se instaló, alternativa:
+//   import { drizzleAdapter } from '@better-auth/drizzle-adapter';
 import { getDb } from './client';
 import * as schema from './schema';
 
