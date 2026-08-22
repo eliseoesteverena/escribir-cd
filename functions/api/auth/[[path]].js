@@ -5,5 +5,22 @@ import { createAuth } from '../../../db/auth';
 // BetterAuth maneja todas esas sub-rutas internamente vía auth.handler().
 export async function onRequest(context) {
     const auth = createAuth(context.env);
-    return auth.handler(context.request);
+    const response = await auth.handler(context.request);
+
+    // DIAGNÓSTICO TEMPORAL — sacar una vez resuelto el 404.
+    // Si BetterAuth devuelve 404, distinguimos entre "Cloudflare nunca
+    // ejecutó esta función" (no vamos a ver este JSON) y "la función SÍ
+    // corrió, pero BetterAuth no reconoce la ruta internamente" (vemos
+    // este JSON con debug:true).
+    if (response.status === 404) {
+        const url = new URL(context.request.url);
+        return new Response(JSON.stringify({
+            debug: true,
+            message: 'La función se ejecutó. BetterAuth devolvió 404 internamente.',
+            path: url.pathname,
+            params: context.params,
+        }, null, 2), { status: 404, headers: { 'Content-Type': 'application/json' } });
+    }
+
+    return response;
 }
