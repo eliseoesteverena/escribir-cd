@@ -1,0 +1,14 @@
+# Copiar este archivo como .dev.vars (sin el .example) y completar con
+# valores reales. .dev.vars NO se commitea (ver .gitignore).
+# Estas variables son para desarrollo LOCAL (wrangler pages dev).
+# En producción se configuran en el dashboard de Cloudflare Pages
+# (Settings -> Environment variables) o como secrets (wrangler secret put).
+
+# Ya existente, usado por functions/api/extract.js
+GEMINI_API_KEY=
+
+# Nuevas, para BetterAuth (Fase 2)
+# Generar con: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+BETTER_AUTH_SECRET=
+# Local: http://localhost:8788 — Producción: https://escribir-cd.pages.dev
+BETTER_AUTH_URL=http://localhost:8788

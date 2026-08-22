@@ -1,6 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 export default {
-  content: ['./src/**/*.html', './src/js/**/*.js'],
+  content: ['./src/**/*.html', './public/js/**/*.js'],
   theme: {
     extend: {
       fontFamily: { sans: ['Geist', 'sans-serif'] },
