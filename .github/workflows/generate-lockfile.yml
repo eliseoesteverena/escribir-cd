@@ -1,0 +1,32 @@
+name: Generar package-lock.json
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  lockfile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Instalar dependencias (esto genera package-lock.json)
+        run: npm install
+
+      - name: Commitear el lockfile si hay cambios
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if [ -n "$(git status --porcelain package-lock.json)" ]; then
+            git add package-lock.json
+            git commit -m "chore: generar/actualizar package-lock.json"
+            git push
+          else
+            echo "Sin cambios en package-lock.json"
+          fi
