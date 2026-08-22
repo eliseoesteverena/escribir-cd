@@ -11,7 +11,7 @@ import * as schema from './schema';
 type AuthEnv = {
     DB: D1Database;
     BETTER_AUTH_SECRET: string;
-    BETTER_AUTH_URL?: string;
+    BETTER_AUTH_URL ? : string;
 };
 
 /**
@@ -25,14 +25,21 @@ type AuthEnv = {
  */
 export function createAuth(env: AuthEnv) {
     const db = getDb(env);
-
+    
+    // Se saca cualquier barra final: BetterAuth arma internamente
+    // baseURL + basePath ('/api/auth'), y una barra sobrante ahí produce
+    // '.../​/api/auth' (doble barra) que nunca matchea contra la URL real
+    // de la request — el router HTTP interno queda 404 para todo, aunque
+    // la config y la base de datos estén perfectas.
+    const baseURL = env.BETTER_AUTH_URL?.replace(/\/+$/, '');
+    
     return betterAuth({
         database: drizzleAdapter(db, {
             provider: 'sqlite',
             schema,
         }),
         secret: env.BETTER_AUTH_SECRET,
-        baseURL: env.BETTER_AUTH_URL,
+        baseURL,
         emailAndPassword: {
             enabled: true,
             // La verificación de email queda para más adelante: requiere
