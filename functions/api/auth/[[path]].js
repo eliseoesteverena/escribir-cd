@@ -4,16 +4,50 @@ import { createAuth } from '../../../db/auth';
 // (sign-up/email, sign-in/email, session, sign-out, callback/*, etc.)
 // BetterAuth maneja todas esas sub-rutas internamente vía auth.handler().
 export async function onRequest(context) {
-    const auth = createAuth(context.env);
-    const response = await auth.handler(context.request);
+    let auth;
+    try {
+        auth = createAuth(context.env);
+    } catch (err) {
+        return new Response(JSON.stringify({
+            debug: true,
+            stage: 'createAuth() lanzó una excepción',
+            error: String((err && err.stack) || err),
+        }, null, 2), { status: 500, headers: { 'Content-Type': 'application/json' } });
+    }
+
+    const url = new URL(context.request.url);
+
+    // DIAGNÓSTICO: /api/auth/session?direct=1 bypasea el router HTTP de
+    // auth.handler y llama a la API de BetterAuth directamente. Si esto
+    // funciona pero auth.handler sigue en 404, el problema es específico
+    // del ruteo HTTP interno (basePath/baseURL), no de cómo se construye auth.
+    if (url.searchParams.has('direct')) {
+        try {
+            const session = await auth.api.getSession({ headers: context.request.headers });
+            return new Response(JSON.stringify({
+                debug: true, via: 'auth.api.getSession (bypass)', session,
+            }, null, 2), { headers: { 'Content-Type': 'application/json' } });
+        } catch (err) {
+            return new Response(JSON.stringify({
+                debug: true, via: 'auth.api.getSession (bypass)',
+                error: String((err && err.stack) || err),
+            }, null, 2), { status: 500, headers: { 'Content-Type': 'application/json' } });
+        }
+    }
+
+    let response;
+    try {
+        response = await auth.handler(context.request);
+    } catch (err) {
+        return new Response(JSON.stringify({
+            debug: true,
+            stage: 'auth.handler() lanzó una excepción',
+            error: String((err && err.stack) || err),
+        }, null, 2), { status: 500, headers: { 'Content-Type': 'application/json' } });
+    }
 
     // DIAGNÓSTICO TEMPORAL — sacar una vez resuelto el 404.
-    // Si BetterAuth devuelve 404, distinguimos entre "Cloudflare nunca
-    // ejecutó esta función" (no vamos a ver este JSON) y "la función SÍ
-    // corrió, pero BetterAuth no reconoce la ruta internamente" (vemos
-    // este JSON con debug:true).
     if (response.status === 404) {
-        const url = new URL(context.request.url);
         return new Response(JSON.stringify({
             debug: true,
             message: 'La función se ejecutó. BetterAuth devolvió 404 internamente.',
