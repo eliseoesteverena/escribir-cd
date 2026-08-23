@@ -19,16 +19,23 @@ async function authGetSession() {
 }
 
 function extractErrorDetail(data) {
+    let detail;
     if (data.originalBody) {
         try {
             const inner = JSON.parse(data.originalBody);
-            if (inner && inner.message) return inner.message;
+            detail = (inner && inner.message) || data.originalBody;
         } catch {
-            // no era JSON, mostramos el texto crudo tal cual
+            detail = data.originalBody;
         }
-        return data.originalBody;
+    } else {
+        detail = data.message || data.error || data.stage || JSON.stringify(data);
     }
-    return data.message || data.error || data.stage || JSON.stringify(data);
+
+    if (Array.isArray(data.logs) && data.logs.length) {
+        detail += '\n\n--- logs de BetterAuth ---\n' + data.logs.join('\n');
+    }
+
+    return detail;
 }
 
 async function authSignUpEmail({ name, email, password }) {

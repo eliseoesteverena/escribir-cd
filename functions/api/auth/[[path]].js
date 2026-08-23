@@ -4,9 +4,11 @@ import { createAuth } from '../../../db/auth';
 // (sign-up/email, sign-in/email, get-session, sign-out, callback/*, etc.)
 // BetterAuth maneja todas esas sub-rutas internamente vía auth.handler().
 export async function onRequest(context) {
-    const auth = createAuth(context.env);
+    // DIAGNÓSTICO TEMPORAL — captura los logs internos de BetterAuth
+    // (nivel debug, ver db/auth.ts) para devolverlos si algo falla.
+    const logs = [];
+    const auth = createAuth(context.env, { onLog: (line) => logs.push(line) });
 
-    // DIAGNÓSTICO TEMPORAL — sacar una vez resuelto el 500 del signup.
     let response;
     try {
         response = await auth.handler(context.request);
@@ -16,6 +18,7 @@ export async function onRequest(context) {
             stage: 'auth.handler() lanzó una excepción sin capturar',
             error: String((err && err.stack) || err),
             cause: err && err.cause ? String(err.cause) : null,
+            logs,
         }, null, 2), { status: 500, headers: { 'Content-Type': 'application/json' } });
     }
 
@@ -27,6 +30,7 @@ export async function onRequest(context) {
             originalStatus: response.status,
             originalBody: bodyText,
             originalHeaders: Object.fromEntries(response.headers.entries()),
+            logs,
         }, null, 2), { status: response.status, headers: { 'Content-Type': 'application/json' } });
     }
 

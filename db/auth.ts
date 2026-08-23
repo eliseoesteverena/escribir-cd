@@ -22,8 +22,12 @@ type AuthEnv = {
  * instancia de auth una sola vez a nivel de módulo (el patrón típico de
  * una app Node con `export const auth = betterAuth(...)` global no
  * funciona acá). Por eso esto es una función que se llama en cada request.
+ *
+ * `onLog`, si se pasa, recibe cada línea del logger interno de BetterAuth
+ * (nivel 'debug') — permite capturarlas y devolverlas en la respuesta de
+ * error en vez de depender de los logs en vivo del dashboard de Cloudflare.
  */
-export function createAuth(env: AuthEnv) {
+export function createAuth(env: AuthEnv, options?: { onLog?: (line: string) => void }) {
     const db = getDb(env);
 
     // Se saca cualquier barra final: BetterAuth arma internamente
@@ -50,6 +54,25 @@ export function createAuth(env: AuthEnv) {
             // un proveedor de envío de mails (Resend, Postmark, etc.) que
             // todavía no está configurado. Sin esto, el alta funciona
             // igual, solo que no exige confirmar el correo.
+        },
+        // DIAGNÓSTICO TEMPORAL — bajar a 'error' (o sacar el bloque entero)
+        // una vez resuelto el 500 del signup.
+        logger: {
+            level: 'debug',
+            disabled: false,
+            log: (level, message, ...args) => {
+                const extra = args.length
+                    ? ' ' + args.map((a) => {
+                        try { return JSON.stringify(a); } catch { return String(a); }
+                    }).join(' ')
+                    : '';
+                const line = `[${level}] ${message}${extra}`;
+                if (options?.onLog) {
+                    options.onLog(line);
+                } else {
+                    console.log(line);
+                }
+            },
         },
     });
 }
