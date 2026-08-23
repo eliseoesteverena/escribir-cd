@@ -18,6 +18,19 @@ async function authGetSession() {
     }
 }
 
+function extractErrorDetail(data) {
+    if (data.originalBody) {
+        try {
+            const inner = JSON.parse(data.originalBody);
+            if (inner && inner.message) return inner.message;
+        } catch {
+            // no era JSON, mostramos el texto crudo tal cual
+        }
+        return data.originalBody;
+    }
+    return data.message || data.error || data.stage || JSON.stringify(data);
+}
+
 async function authSignUpEmail({ name, email, password }) {
     const res = await fetch('/api/auth/sign-up/email', {
         method: 'POST',
@@ -26,8 +39,7 @@ async function authSignUpEmail({ name, email, password }) {
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
-        const detail = data.message || data.error || data.stage || JSON.stringify(data);
-        throw new Error(`${detail} (status ${res.status})`);
+        throw new Error(`${extractErrorDetail(data)} (status ${res.status})`);
     }
     return data;
 }
@@ -40,8 +52,7 @@ async function authSignInEmail({ email, password }) {
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
-        const detail = data.message || data.error || data.stage || JSON.stringify(data);
-        throw new Error(`${detail} (status ${res.status})`);
+        throw new Error(`${extractErrorDetail(data)} (status ${res.status})`);
     }
     return data;
 }
