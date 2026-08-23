@@ -21,6 +21,7 @@ export default defineConfig({
         index: resolve(__dirname, 'src/index.html'),
         cd: resolve(__dirname, 'src/cd.html'),
         ayuda: resolve(__dirname, 'src/ayuda.html'),
+        login: resolve(__dirname, 'src/login.html'),
       },
     },
   },

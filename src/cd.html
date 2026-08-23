@@ -167,6 +167,9 @@
                 <nav class="hidden md:flex items-center space-x-6 text-sm font-medium text-gray-600">
                     <a href="cd.html" class="hover:text-blue-600 transition-colors">Formulario</a>
                     <a href="ayuda.html" class="hover:text-blue-600 transition-colors">Cómo se completa</a>
+                    <div id="nav-auth-desktop">
+                        <a href="login.html" class="hover:text-blue-600 transition-colors">Iniciar sesión</a>
+                    </div>
                 </nav>
 
                 <!-- Botón Menú Hamburguesa (Móvil) -->
@@ -192,6 +195,11 @@
             <a href="ayuda.html" class="block px-3 py-2.5 rounded-lg text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50 transition-colors">
                 Cómo se completa
             </a>
+            <div id="nav-auth-mobile" class="pt-2 mt-2 border-t border-gray-100">
+                <a href="login.html" class="block px-3 py-2.5 rounded-lg text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50 transition-colors">
+                    Iniciar sesión
+                </a>
+            </div>
         </div>
     </header>
 
@@ -417,6 +425,7 @@
         </div>
     </div>
 
+    <script src="js/auth.js"></script>
     <script src="js/nav.js"></script>
     <script src="js/index.js"></script>
     <script src="js/wizard.js"></script>
