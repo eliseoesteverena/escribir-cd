@@ -11,7 +11,7 @@ import * as schema from './schema';
 type AuthEnv = {
     DB: D1Database;
     BETTER_AUTH_SECRET: string;
-    BETTER_AUTH_URL ? : string;
+    BETTER_AUTH_URL?: string;
 };
 
 /**
@@ -25,14 +25,14 @@ type AuthEnv = {
  */
 export function createAuth(env: AuthEnv) {
     const db = getDb(env);
-    
+
     // Se saca cualquier barra final: BetterAuth arma internamente
     // baseURL + basePath ('/api/auth'), y una barra sobrante ahí produce
     // '.../​/api/auth' (doble barra) que nunca matchea contra la URL real
     // de la request — el router HTTP interno queda 404 para todo, aunque
     // la config y la base de datos estén perfectas.
     const baseURL = env.BETTER_AUTH_URL?.replace(/\/+$/, '');
-    
+
     return betterAuth({
         database: drizzleAdapter(db, {
             provider: 'sqlite',
@@ -40,12 +40,9 @@ export function createAuth(env: AuthEnv) {
         }),
         secret: env.BETTER_AUTH_SECRET,
         baseURL,
-        // Explícito a propósito: en varios setups (issues reportados en el
-        // repo de BetterAuth) el basePath no se autocompleta como
-        // '/api/auth' de forma confiable, y sin esto el handler HTTP
-        // devuelve 404 para todas las rutas aunque el resto de la config
-        // (adapter, DB, secret) esté perfecta — que es justo lo que
-        // estábamos viendo acá.
+        // Explícito por prolijidad (aunque resultó ser el default real acá,
+        // como confirmó el diagnóstico) — mejor no depender de un default
+        // asumido para algo tan sensible al ruteo.
         basePath: '/api/auth',
         emailAndPassword: {
             enabled: true,
