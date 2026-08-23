@@ -26,7 +26,8 @@ async function authSignUpEmail({ name, email, password }) {
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
-        throw new Error(data.message || `No se pudo crear la cuenta (${res.status})`);
+        const detail = data.message || data.error || data.stage || JSON.stringify(data);
+        throw new Error(`${detail} (status ${res.status})`);
     }
     return data;
 }
@@ -39,7 +40,8 @@ async function authSignInEmail({ email, password }) {
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
-        throw new Error(data.message || `No se pudo iniciar sesión (${res.status})`);
+        const detail = data.message || data.error || data.stage || JSON.stringify(data);
+        throw new Error(`${detail} (status ${res.status})`);
     }
     return data;
 }
