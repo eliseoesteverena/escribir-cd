@@ -8,7 +8,11 @@
 
 async function authGetSession() {
     try {
-        const res = await fetch('/api/auth/get-session');
+        // cache: 'no-store' es importante: sin esto, el navegador puede
+        // devolver una respuesta vieja (por ejemplo "logueado") justo
+        // después de cerrar sesión, dando la impresión de que el logout
+        // no funcionó cuando en realidad sí funcionó server-side.
+        const res = await fetch('/api/auth/get-session', { cache: 'no-store' });
         if (!res.ok) return null;
         const data = await res.json();
         return data; // { session, user } o null si no hay sesión
@@ -66,9 +70,18 @@ async function authSignInEmail({ email, password }) {
 
 async function authSignOut() {
     try {
-        await fetch('/api/auth/sign-out', { method: 'POST' });
+        const res = await fetch('/api/auth/sign-out', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+        });
+        if (!res.ok) {
+            const bodyText = await res.text().catch(() => '');
+            console.error('Sign-out respondió', res.status, bodyText);
+        }
     } catch (err) {
         console.error('Error cerrando sesión:', err);
     }
-    window.location.href = 'index.html';
+    // No confiamos en cachés intermedias: forzamos recarga completa en vez
+    // de una navegación que el navegador podría servir desde bfcache.
+    window.location.replace('index.html');
 }
