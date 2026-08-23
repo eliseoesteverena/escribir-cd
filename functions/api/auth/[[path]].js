@@ -87,6 +87,29 @@ async function runFullDiagnostic(context, url) {
         log('10. Object.keys(auth.api)', { error: String(err) });
     }
 
+    // --- La pregunta clave: qué URL real corresponde a cada método ---
+    // (vimos que signUpEmail vive en /sign-up/email, no en /signUpEmail —
+    // así que 'getSession' capaz no vive en /session)
+    try {
+        const apiPathInfo = {};
+        for (const key of Object.keys(auth.api || {})) {
+            const fn = auth.api[key];
+            apiPathInfo[key] = {
+                path: fn && fn.path,
+                optionsPath: fn && fn.options && fn.options.path,
+            };
+        }
+        log('10b. Metadata de path guardada en cada función de auth.api', apiPathInfo);
+    } catch (err) {
+        log('10b. Metadata de path por método', { error: String(err) });
+    }
+
+    try {
+        log('10c. Object.keys(auth.$context)', { keys: auth.$context ? Object.keys(auth.$context) : null });
+    } catch (err) {
+        log('10c. Object.keys(auth.$context)', { error: String(err) });
+    }
+
     try {
         log('11. auth.options resuelto (config final que ve BetterAuth)', {
             baseURL: auth.options ? auth.options.baseURL : '(no existe la propiedad .options)',
@@ -112,6 +135,7 @@ async function runFullDiagnostic(context, url) {
         { label: '15. GET /api/auth — raíz del basePath, sin sub-ruta', request: new Request(`${origin}/api/auth`, { method: 'GET' }) },
         { label: '16. GET /api/auth/ — raíz con barra final', request: new Request(`${origin}/api/auth/`, { method: 'GET' }) },
         { label: '17. GET /api/auth/ok — ruta inventada (control: acá SÍ debería ser 404 real)', request: new Request(`${origin}/api/auth/ok`, { method: 'GET' }) },
+        { label: '19. GET /api/auth/get-session — variante de nombre (getSession -> get-session, como signUpEmail -> sign-up/email)', request: new Request(`${origin}/api/auth/get-session`, { method: 'GET' }) },
         {
             label: '18. POST /api/auth/sign-up/email — body vacío, solo para ver si matchea la ruta (sin escribir en la DB)',
             request: new Request(`${origin}/api/auth/sign-up/email`, {
