@@ -5,6 +5,60 @@
 // visor nativo del navegador: en Chrome de escritorio ese visor existe,
 // pero en Chrome/WebView de Android no hay visor de PDF embebido para
 // iframes, así que el preview quedaba en blanco.
+let activePdfDoc = null;
+let activePdfPageNum = 1;
+
+async function renderActivePdfPage() {
+    if (!activePdfDoc) return;
+
+    const canvas = document.getElementById('pdf-preview-canvas');
+    const wrapper = document.getElementById('pdf-preview-wrapper');
+    const indicator = document.getElementById('pdf-page-indicator');
+    const prevBtn = document.getElementById('pdf-prev-page');
+    const nextBtn = document.getElementById('pdf-next-page');
+
+    const ctx = canvas.getContext('2d');
+    const page = await activePdfDoc.getPage(activePdfPageNum);
+
+    // Escalamos para que la página entre en el ancho visible del modal
+    // (importante en celular, donde el modal ocupa casi toda la pantalla)
+    const availableWidth = Math.max(wrapper.parentElement.clientWidth - 32, 240);
+    const baseViewport = page.getViewport({ scale: 1 });
+    const scale = Math.min(availableWidth / baseViewport.width, 1.4);
+    const viewport = page.getViewport({ scale });
+
+    // Nitidez en pantallas de alta densidad (la mayoría de los celulares)
+    const outputScale = window.devicePixelRatio || 1;
+    canvas.width = Math.floor(viewport.width * outputScale);
+    canvas.height = Math.floor(viewport.height * outputScale);
+    canvas.style.width = `${Math.floor(viewport.width)}px`;
+    canvas.style.height = `${Math.floor(viewport.height)}px`;
+
+    await page.render({
+        canvasContext: ctx,
+        viewport,
+        transform: outputScale !== 1 ? [outputScale, 0, 0, outputScale, 0, 0] : null,
+    }).promise;
+
+    if (indicator) indicator.textContent = `Página ${activePdfPageNum} de ${activePdfDoc.numPages}`;
+    if (prevBtn) prevBtn.disabled = activePdfPageNum <= 1;
+    if (nextBtn) nextBtn.disabled = activePdfPageNum >= activePdfDoc.numPages;
+}
+
+document.getElementById('pdf-prev-page')?.addEventListener('click', () => {
+    if (activePdfPageNum > 1) {
+        activePdfPageNum--;
+        renderActivePdfPage();
+    }
+});
+
+document.getElementById('pdf-next-page')?.addEventListener('click', () => {
+    if (activePdfDoc && activePdfPageNum < activePdfDoc.numPages) {
+        activePdfPageNum++;
+        renderActivePdfPage();
+    }
+});
+
 async function openPreviewModal(correoType) {
     const modal = document.getElementById('preview-modal');
     const modalContent = document.getElementById('preview-modal-content');
@@ -12,6 +66,7 @@ async function openPreviewModal(correoType) {
     const wrapper = document.getElementById('pdf-preview-wrapper');
     const canvas = document.getElementById('pdf-preview-canvas');
     const downloadBtn = document.getElementById('modal-download-btn');
+    const pageNav = document.getElementById('pdf-page-nav');
 
     // Actualizar título según la empresa
     title.textContent = `Vista Previa - ${correoType === 'cd_correo_andreani' ? 'Andreani' : 'Correo Argentino'}`;
@@ -31,6 +86,7 @@ async function openPreviewModal(correoType) {
     const ctx = canvas.getContext('2d');
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     wrapper.style.opacity = '0.4';
+    if (pageNav) pageNav.classList.add('hidden');
 
     let pdfBlobUrl;
     try {
@@ -42,34 +98,24 @@ async function openPreviewModal(correoType) {
             return;
         }
 
-        const pdfDoc = await pdfjsLib.getDocument(pdfBlobUrl).promise;
-        const page = await pdfDoc.getPage(1);
+        activePdfDoc = await pdfjsLib.getDocument(pdfBlobUrl).promise;
+        activePdfPageNum = 1;
 
-        // Escalamos para que la página entre en el ancho visible del modal
-        // (importante en celular, donde el modal ocupa casi toda la pantalla)
-        const availableWidth = Math.max(wrapper.parentElement.clientWidth - 32, 240);
-        const baseViewport = page.getViewport({ scale: 1 });
-        const scale = Math.min(availableWidth / baseViewport.width, 1.4);
-        const viewport = page.getViewport({ scale });
+        if (pageNav) {
+            const hasMultiplePages = activePdfDoc.numPages > 1;
+            pageNav.classList.toggle('hidden', !hasMultiplePages);
+            pageNav.classList.toggle('flex', hasMultiplePages);
+        }
 
-        // Nitidez en pantallas de alta densidad (la mayoría de los celulares)
-        const outputScale = window.devicePixelRatio || 1;
-        canvas.width = Math.floor(viewport.width * outputScale);
-        canvas.height = Math.floor(viewport.height * outputScale);
-        canvas.style.width = `${Math.floor(viewport.width)}px`;
-        canvas.style.height = `${Math.floor(viewport.height)}px`;
-
-        await page.render({
-            canvasContext: ctx,
-            viewport,
-            transform: outputScale !== 1 ? [outputScale, 0, 0, outputScale, 0, 0] : null,
-        }).promise;
-
+        await renderActivePdfPage();
         wrapper.style.opacity = '1';
     } catch (error) {
         console.error('Error al generar la vista previa:', error);
         alert("Hubo un error al generar la vista previa.");
     } finally {
+        // El documento ya quedó completamente parseado en memoria por
+        // PDF.js — revocar la blob URL acá no afecta la navegación entre
+        // páginas que pase después.
         if (pdfBlobUrl) URL.revokeObjectURL(pdfBlobUrl);
     }
 }
@@ -88,6 +134,8 @@ function closeModal() {
         if (canvas) {
             canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
         }
+        activePdfDoc = null;
+        activePdfPageNum = 1;
     }, 300);
 }
 
@@ -403,7 +451,161 @@ function populateFormWithExtractedData(data) {
 
 
 // =============================================================
-// 5. GENERADOR DE PDF Y RASTERIZADO (jsPDF + html2canvas)
+// 5. PAGINACIÓN DEL CUERPO (para cuando no entra en una sola hoja)
+// =============================================================
+// 1cm = 96/2.54 px exactos por definición de la unidad CSS 'cm',
+// independiente de la densidad de pantalla real del dispositivo.
+const CM_TO_PX = 96 / 2.54;
+
+function getTextNodesInOrder(root) {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null);
+    const nodes = [];
+    let n;
+    while ((n = walker.nextNode())) nodes.push(n);
+    return nodes;
+}
+
+function resolveGlobalOffset(textNodes, globalOffset) {
+    let remaining = globalOffset;
+    for (const node of textNodes) {
+        const len = node.textContent.length;
+        if (remaining <= len) return { node, offset: remaining };
+        remaining -= len;
+    }
+    const last = textNodes[textNodes.length - 1];
+    return last ? { node: last, offset: last.textContent.length } : null;
+}
+
+function measureHeightUpTo(container, textNodes, globalOffset) {
+    const target = resolveGlobalOffset(textNodes, globalOffset);
+    if (!target) return 0;
+    const range = document.createRange();
+    range.setStart(container, 0);
+    range.setEnd(target.node, target.offset);
+    const rects = range.getClientRects();
+    if (rects.length === 0) return 0;
+    const containerTop = container.getBoundingClientRect().top;
+    let maxBottom = 0;
+    for (const r of rects) maxBottom = Math.max(maxBottom, r.bottom - containerTop);
+    return maxBottom;
+}
+
+// Busca el mayor offset de texto tal que el contenido hasta ahí entra en
+// maxHeightPx. Same idea que un "find last true" binario: la altura crece
+// (o se mantiene) a medida que avanza el offset, así que es válido.
+function binarySearchSplitOffset(container, textNodes, maxHeightPx) {
+    const total = textNodes.reduce((sum, n) => sum + n.textContent.length, 0);
+    if (total === 0) return 0;
+    if (measureHeightUpTo(container, textNodes, 1) > maxHeightPx) return 0;
+
+    let lo = 0, hi = total;
+    while (lo < hi) {
+        const mid = Math.ceil((lo + hi + 1) / 2);
+        const h = measureHeightUpTo(container, textNodes, mid);
+        if (h <= maxHeightPx) lo = mid; else hi = mid - 1;
+    }
+    return lo;
+}
+
+// Retrocede hasta el espacio en blanco anterior más cercano, para que la
+// palabra que queda "cortada" por la búsqueda binaria pase entera a la
+// página siguiente en vez de partirse a la mitad.
+function snapToWordBoundary(fullText, globalOffset) {
+    let i = globalOffset;
+    while (i > 0 && !/\s/.test(fullText[i - 1])) i--;
+    return i;
+}
+
+// Divide el contenedor en dos fragmentos de HTML en el punto (node, offset)
+// usando Range.cloneContents() — preserva automáticamente el formato
+// (negrita, tamaño, etc.) de los spans que quedan "abiertos" en el corte.
+function splitContainerAt(container, node, offset) {
+    const rangeA = document.createRange();
+    rangeA.setStart(container, 0);
+    rangeA.setEnd(node, offset);
+    const divA = document.createElement('div');
+    divA.appendChild(rangeA.cloneContents());
+
+    const rangeB = document.createRange();
+    rangeB.setStart(node, offset);
+    rangeB.setEnd(container, container.childNodes.length);
+    const divB = document.createElement('div');
+    divB.appendChild(rangeB.cloneContents());
+
+    return { pageHtml: divA.innerHTML, restHtml: divB.innerHTML };
+}
+
+// Orquesta todo: recibe el HTML completo del cuerpo y devuelve un array de
+// fragmentos de HTML, uno por página, cada uno garantizado de entrar en
+// maxHeightCm a un ancho de widthCm.
+async function paginateBody(html, widthCm, maxHeightCm) {
+    const maxHeightPx = maxHeightCm * CM_TO_PX;
+
+    const measureEl = document.createElement('div');
+    measureEl.style.position = 'fixed';
+    measureEl.style.left = '-9999px';
+    measureEl.style.top = '0';
+    measureEl.style.width = `${widthCm}cm`;
+    measureEl.style.fontSize = DEFAULT_SIZE;
+    measureEl.style.lineHeight = DEFAULT_LINE_HEIGHT;
+    measureEl.style.fontFamily = 'Helvetica, Arial, sans-serif';
+    document.body.appendChild(measureEl);
+
+    const pages = [];
+    let remainingHtml = html;
+    let safety = 0;
+
+    try {
+        while (true) {
+            safety++;
+            if (safety > 30) { // salvaguarda: nunca debería hacer falta tanto
+                pages.push(remainingHtml);
+                break;
+            }
+
+            measureEl.innerHTML = remainingHtml;
+
+            if (measureEl.scrollHeight <= maxHeightPx) {
+                pages.push(remainingHtml);
+                break;
+            }
+
+            const textNodes = getTextNodesInOrder(measureEl);
+            if (textNodes.length === 0) {
+                pages.push(remainingHtml);
+                break;
+            }
+
+            const rawOffset = binarySearchSplitOffset(measureEl, textNodes, maxHeightPx);
+            const fullText = textNodes.map((n) => n.textContent).join('');
+            const snapped = snapToWordBoundary(fullText, rawOffset);
+            const finalOffset = snapped > 0 ? snapped : rawOffset;
+
+            if (finalOffset <= 0) {
+                // Ni una palabra entra (caso extremo, no debería pasar en la
+                // práctica) — evitamos loop infinito mandando todo junto.
+                pages.push(remainingHtml);
+                break;
+            }
+
+            const target = resolveGlobalOffset(textNodes, finalOffset);
+            const { pageHtml, restHtml } = splitContainerAt(measureEl, target.node, target.offset);
+            pages.push(pageHtml);
+            remainingHtml = restHtml;
+
+            const tmp = document.createElement('div');
+            tmp.innerHTML = restHtml;
+            if (tmp.textContent.trim().length === 0) break;
+        }
+    } finally {
+        document.body.removeChild(measureEl);
+    }
+
+    return pages;
+}
+
+// =============================================================
+// 6. GENERADOR DE PDF Y RASTERIZADO (jsPDF + html2canvas)
 // =============================================================
 async function generatePDF(correo, output = 'pdf') {
     const { jsPDF } = window.jspdf;
@@ -563,65 +765,87 @@ async function generatePDF(correo, output = 'pdf') {
         }
     };
 
-    const container = document.createElement('div');
-    container.style.position = 'fixed';
-    container.style.left = '-9999px';
-    container.style.top = '0';
-    container.style.width = '21.5cm';
-    container.style.height = '35.5cm';
-    container.style.backgroundColor = '#ffffff'; 
-    container.style.boxSizing = 'border-box';
-    container.style.fontFamily = 'Helvetica, Arial, sans-serif';
-    container.style.zIndex = '99999';
-    document.body.appendChild(container);
+    const cuerpoPos = config.cuerpo_cd.sizesAndPos[correo];
+    const cuerpoPages = await paginateBody(datos.cuerpo_cd, cuerpoPos.width, cuerpoPos.height);
+
+    // Arma UNA página completa (todos los campos + el tramo de cuerpo que
+    // le toca) y devuelve su canvas rasterizado. Remitente/destinatario y
+    // sus _bis se repiten igual en cada página — así es el formulario físico.
+    async function renderPage(cuerpoHtml) {
+        const container = document.createElement('div');
+        container.style.position = 'fixed';
+        container.style.left = '-9999px';
+        container.style.top = '0';
+        container.style.width = '21.5cm';
+        container.style.height = '35.5cm';
+        container.style.backgroundColor = '#ffffff';
+        container.style.boxSizing = 'border-box';
+        container.style.fontFamily = 'Helvetica, Arial, sans-serif';
+        container.style.zIndex = '99999';
+        document.body.appendChild(container);
 
         for (const fieldName in config) {
-        const field = config[fieldName];
-        const pos = field.sizesAndPos[correo];
-        
-        const div = document.createElement('div');
-        div.style.position = 'absolute';
-        div.style.left = `${pos.x}cm`;
-        div.style.top = `${pos.y}cm`;
-        div.style.width = `${pos.width}cm`;
-        div.style.height = `${pos.height}cm`;
-        div.style.fontSize = '9pt';
-        
-        // MODIFICACIONES CLAVE AQUÍ:
-        div.style.lineHeight = '1.35';     // 1. Aumentamos el interlineado para darle aire a la base
-        div.style.overflow = 'visible';    // 2. Evitamos que corte estrictamente el borde inferior
-        
-        div.style.backgroundColor = '#ffffff'; 
-        div.style.color = '#000000';
+            const field = config[fieldName];
+            const pos = field.sizesAndPos[correo];
 
-        if (fieldName === 'cuerpo_cd') {
-            div.style.fontSize = '12pt';
-            // Volvemos a ocultar el desborde SOLO para el cuerpo principal, para que no pise los márgenes
-            div.style.overflow = 'hidden'; 
-            div.innerHTML = field.text; 
-        } else {
-            div.textContent = field.text;
+            const div = document.createElement('div');
+            div.style.position = 'absolute';
+            div.style.left = `${pos.x}cm`;
+            div.style.top = `${pos.y}cm`;
+            div.style.width = `${pos.width}cm`;
+            div.style.height = `${pos.height}cm`;
+            div.style.fontSize = '9pt';
+            div.style.lineHeight = '1.35';
+            div.style.overflow = 'visible';
+            div.style.backgroundColor = '#ffffff';
+            div.style.color = '#000000';
+
+            if (fieldName === 'cuerpo_cd') {
+                // Antes hardcodeado a 12pt, no coincidía con el default real
+                // del editor (10pt) — cualquier texto sin tamaño explícito
+                // se imprimía más grande de lo que se veía en pantalla.
+                div.style.fontSize = DEFAULT_SIZE;
+                div.style.lineHeight = DEFAULT_LINE_HEIGHT;
+                // overflow:hidden queda como salvaguarda — paginateBody ya
+                // garantiza que cuerpoHtml entra en el alto disponible.
+                div.style.overflow = 'hidden';
+                div.innerHTML = cuerpoHtml;
+            } else {
+                div.textContent = field.text;
+            }
+
+            container.appendChild(div);
         }
 
-        container.appendChild(div);
+        try {
+            return await html2canvas(container, {
+                scale: 3,
+                useCORS: true,
+                backgroundColor: '#ffffff'
+            });
+        } finally {
+            document.body.removeChild(container);
+        }
     }
 
-
     try {
-        const canvas = await html2canvas(container, {
-            scale: 3, 
-            useCORS: true,
-            backgroundColor: '#ffffff'
-        });
-
         const pdf = new jsPDF({
             orientation: 'portrait',
             unit: 'cm',
             format: [21.5, 35.5]
         });
 
-        const imgData = canvas.toDataURL('image/jpeg', 0.99); 
-        pdf.addImage(imgData, 'JPEG', 0, 0, 21.5, 35.5);
+        let firstCanvas = null;
+
+        for (let i = 0; i < cuerpoPages.length; i++) {
+            if (i > 0) pdf.addPage([21.5, 35.5], 'portrait');
+
+            const canvas = await renderPage(cuerpoPages[i]);
+            if (i === 0) firstCanvas = canvas;
+
+            const imgData = canvas.toDataURL('image/jpeg', 0.99);
+            pdf.addImage(imgData, 'JPEG', 0, 0, 21.5, 35.5);
+        }
 
         // Control de Salida (Modificado para soportar el modal)
         if (output === 'pdf') {
@@ -629,12 +853,10 @@ async function generatePDF(correo, output = 'pdf') {
         } else if (output === 'bloburl') {
             return pdf.output('bloburl'); // Ideal para embeber en el iframe
         } else {
-            return canvas;
+            return firstCanvas;
         }
 
     } catch (error) {
         console.error("Error al rasterizar el documento PDF:", error);
-    } finally {
-        document.body.removeChild(container);
     }
 }

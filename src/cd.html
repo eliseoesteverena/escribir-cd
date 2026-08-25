@@ -55,7 +55,7 @@
         :root {
             /* Ancho real de impresión del cuerpo de la carta. Ajustable acá
                mientras prueban — lo usa el toggle "Diseño de impresión". */
-            --print-preview-width: 17.5cm;
+            --print-preview-width: 19cm;
         }
 
         /* Backstop: ningún descendiente puede forzar scroll horizontal
@@ -352,6 +352,8 @@
                         </select>
 
                         <select id="fontSize" class="shrink-0 h-10 rounded border border-gray-300 text-sm px-1" style="touch-action:manipulation;">
+                            <option value="6pt">6pt</option>
+                            <option value="7pt">7pt</option>
                             <option value="8pt">8pt</option>
                             <option value="9pt">9pt</option>
                             <option value="10pt" selected>10pt</option>
@@ -361,6 +363,9 @@
                         </select>
 
                         <select id="lineHeight" class="shrink-0 h-10 rounded border border-gray-300 text-sm px-1" style="touch-action:manipulation;">
+                            <option value="0.7">0.7</option>
+                            <option value="0.8">0.8</option>
+                            <option value="0.9">0.9</option>
                             <option value="1">1</option>
                             <option value="1.15" selected>1.15</option>
                             <option value="1.25">1.25</option>
@@ -486,6 +491,17 @@
                 <div class="bg-white shadow-lg rounded-sm" id="pdf-preview-wrapper">
                     <canvas id="pdf-preview-canvas" class="block"></canvas>
                 </div>
+            </div>
+
+            <!-- Navegación de páginas: solo visible si el PDF tiene más de 1 -->
+            <div id="pdf-page-nav" class="hidden items-center justify-center gap-4 px-6 py-3 border-t bg-gray-50">
+                <button type="button" id="pdf-prev-page" class="p-2 rounded-lg hover:bg-gray-200 text-gray-600 disabled:opacity-40 disabled:hover:bg-transparent transition-colors" aria-label="Página anterior">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"></path></svg>
+                </button>
+                <span class="text-sm text-gray-600 min-w-[7rem] text-center" id="pdf-page-indicator">Página 1 de 1</span>
+                <button type="button" id="pdf-next-page" class="p-2 rounded-lg hover:bg-gray-200 text-gray-600 disabled:opacity-40 disabled:hover:bg-transparent transition-colors" aria-label="Página siguiente">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"></path></svg>
+                </button>
             </div>
         </div>
     </div>
