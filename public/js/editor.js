@@ -1,0 +1,174 @@
+// =============================================================
+// EDITOR WYSIWYG (contenteditable + execCommand)
+// Reemplaza a Quill: sin dependencia externa, toolbar con scroll
+// horizontal nativo, selects nativos (no se recortan en mobile).
+// =============================================================
+const editor = document.getElementById('editor');
+const toolbar = document.getElementById('toolbar');
+const fontFamilySel = document.getElementById('fontFamily');
+const fontSizeSel = document.getElementById('fontSize');
+const lineHeightSel = document.getElementById('lineHeight');
+const clearFormatBtn = document.getElementById('clearFormat');
+
+// Usados también por index.js (extracción con IA) para dejar el cuerpo
+// con el formato por defecto de la Carta Documento.
+const DEFAULT_SIZE = '10pt';
+const DEFAULT_LINE_HEIGHT = '1.15';
+
+const FONT_STACKS = {
+    sans: "system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
+    serif: "Georgia, 'Times New Roman', Times, serif",
+    mono: "'Courier New', Courier, monospace",
+};
+
+// --- Guardar/restaurar selección ---
+// Al tocar un <select>, el foco sale del contenteditable y la selección
+// se pierde/colapsa antes de que dispare 'change' (en móvil el selector
+// nativo toma toda la pantalla, así que esto pasa siempre). Por eso
+// guardamos la última selección no colapsada dentro del editor y la
+// restauramos justo antes de aplicar el formato.
+let savedRange = null;
+
+function saveSelectionIfValid() {
+    const sel = window.getSelection();
+    if (!sel.rangeCount) return;
+    const range = sel.getRangeAt(0);
+    if (!range.collapsed && editor.contains(range.commonAncestorContainer)) {
+        savedRange = range.cloneRange();
+    }
+}
+
+function restoreSelection() {
+    if (!savedRange) return false;
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(savedRange.cloneRange());
+    return true;
+}
+
+document.addEventListener('selectionchange', () => {
+    saveSelectionIfValid();
+    if (document.activeElement === editor) updateToolbarState();
+});
+
+// --- Comandos simples (bold, italic, underline, strike, alineación) ---
+toolbar.querySelectorAll('[data-cmd]').forEach((btn) => {
+    btn.addEventListener('mousedown', (e) => e.preventDefault()); // no perder selección
+    btn.addEventListener('click', () => {
+        document.execCommand(btn.dataset.cmd, false, null);
+        editor.focus();
+        updateToolbarState();
+    });
+});
+
+// --- Borrar formato ---
+clearFormatBtn.addEventListener('mousedown', (e) => e.preventDefault());
+clearFormatBtn.addEventListener('click', () => {
+    document.execCommand('removeFormat', false, null);
+    // removeFormat no siempre limpia spans de tamaño de fuente propios; forzamos limpieza
+    unwrapFontSizeSpans();
+    editor.focus();
+    updateToolbarState();
+});
+
+function unwrapFontSizeSpans() {
+    const sel = window.getSelection();
+    if (!sel.rangeCount) return;
+    const range = sel.getRangeAt(0);
+    const container = range.commonAncestorContainer.nodeType === 1
+        ? range.commonAncestorContainer
+        : range.commonAncestorContainer.parentElement;
+    container.querySelectorAll('span[style*="font-size"], span[style*="font-family"]').forEach((span) => {
+        if (range.intersectsNode(span)) {
+            const parent = span.parentNode;
+            while (span.firstChild) parent.insertBefore(span.firstChild, span);
+            parent.removeChild(span);
+        }
+    });
+}
+
+// --- Tipo de fuente ---
+fontFamilySel.addEventListener('change', () => {
+    if (!restoreSelection()) { editor.focus(); return; }
+    applyStyleToSelection({ fontFamily: FONT_STACKS[fontFamilySel.value] });
+    editor.focus();
+});
+
+// --- Tamaño de fuente: envolvemos la selección en un span ---
+fontSizeSel.addEventListener('change', () => {
+    if (!restoreSelection()) { editor.focus(); return; }
+    applyStyleToSelection({ fontSize: fontSizeSel.value });
+    editor.focus();
+});
+
+// --- Interlineado: se aplica al bloque contenedor (párrafo/div), no por carácter ---
+lineHeightSel.addEventListener('change', () => {
+    restoreSelection(); // si no hay selección guardada, aplica a todo el editor (ver función)
+    applyLineHeightToBlock(lineHeightSel.value);
+    editor.focus();
+});
+
+function applyStyleToSelection(styles) {
+    const sel = window.getSelection();
+    if (!sel.rangeCount || sel.isCollapsed) return;
+    const range = sel.getRangeAt(0);
+    const span = document.createElement('span');
+    Object.assign(span.style, styles);
+    try {
+        range.surroundContents(span);
+    } catch (e) {
+        // selección cruza varios nodos: fallback con extractContents
+        const fragment = range.extractContents();
+        span.appendChild(fragment);
+        range.insertNode(span);
+    }
+    sel.removeAllRanges();
+    const newRange = document.createRange();
+    newRange.selectNodeContents(span);
+    sel.addRange(newRange);
+    savedRange = newRange.cloneRange(); // permite aplicar otro cambio sin reseleccionar
+}
+
+function getBlockElement(node) {
+    let el = node.nodeType === 1 ? node : node.parentElement;
+    const blockTags = ['P', 'DIV', 'LI', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'BLOCKQUOTE'];
+    while (el && el !== editor) {
+        if (blockTags.includes(el.tagName)) return el;
+        el = el.parentElement;
+    }
+    return editor; // si no hay bloque explícito, afecta todo el editor
+}
+
+function applyLineHeightToBlock(value) {
+    const sel = window.getSelection();
+    if (!sel.rangeCount) {
+        editor.style.lineHeight = value;
+        return;
+    }
+    const range = sel.getRangeAt(0);
+    const blocks = new Set();
+
+    if (range.collapsed) {
+        blocks.add(getBlockElement(range.startContainer));
+    } else {
+        // recorre todos los nodos dentro del rango y agrupa por bloque
+        const walker = document.createTreeWalker(editor, NodeFilter.SHOW_TEXT);
+        let node;
+        while ((node = walker.nextNode())) {
+            if (range.intersectsNode(node)) {
+                blocks.add(getBlockElement(node));
+            }
+        }
+        if (blocks.size === 0) blocks.add(getBlockElement(range.startContainer));
+    }
+
+    blocks.forEach((b) => { b.style.lineHeight = value; });
+}
+
+// --- Sincroniza estado visual de botones (bold/italic/underline/strike activos) ---
+function updateToolbarState() {
+    toolbar.querySelectorAll('[data-cmd="bold"], [data-cmd="italic"], [data-cmd="underline"], [data-cmd="strikeThrough"]').forEach((btn) => {
+        const active = document.queryCommandState(btn.dataset.cmd);
+        btn.classList.toggle('bg-gray-200', active);
+    });
+}

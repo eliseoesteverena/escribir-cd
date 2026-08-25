@@ -385,77 +385,25 @@ function populateFormWithExtractedData(data) {
         if (data.destinatario.provincia) document.getElementById('provincia_dt').value = data.destinatario.provincia;
     }
     
-    // Si la API devuelve el cuerpo de la carta, lo inyectamos en Quill
-    if (data.cuerpo && typeof quill !== 'undefined') {
-        // Se preserva el formato por defecto al pegar
-        quill.setText(data.cuerpo);
-        quill.formatText(0, quill.getLength(), {
-            'size': DEFAULT_SIZE,
-            'line-height': DEFAULT_LINE_HEIGHT
-        });
+    // Si la API devuelve el cuerpo de la carta, lo inyectamos en el editor.
+    // A diferencia de Quill.setText(), asignar texto plano a innerHTML no
+    // genera saltos de línea visuales por sí solo — hay que convertir "\n"
+    // a <br> a mano. También hay que escapar < > & primero: el texto viene
+    // de la extracción de IA, no es HTML de confianza.
+    if (data.cuerpo && editor) {
+        const escaped = data.cuerpo
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
+        editor.innerHTML = escaped.replace(/\n/g, '<br>');
+        editor.style.fontSize = DEFAULT_SIZE;
+        editor.style.lineHeight = DEFAULT_LINE_HEIGHT;
     }
 }
 
 
 // =============================================================
-// 5. CONFIGURACIÓN DEL EDITOR QUILL
-// =============================================================
-const Parchment = Quill.import('parchment');
-
-const LineHeightStyle = new Parchment.Attributor.Style('line-height', 'line-height', {
-    scope: Parchment.Scope.BLOCK,
-    whitelist: ['0.5', '0.8', '1', '1.15', '1.5', '2', '2.5']
-});
-Quill.register(LineHeightStyle, true);
-
-const SizeStyle = new Parchment.Attributor.Style('size', 'font-size', {
-    scope: Parchment.Scope.INLINE,
-    whitelist: ['7pt', '8pt', '9pt', '10pt', '12pt', '14pt', '16pt', '18pt', '20pt', '24pt', '30pt']
-});
-Quill.register(SizeStyle, true);
-
-const quill = new Quill('#editor', {
-    theme: 'snow',
-    modules: {
-        toolbar: [
-            [{ 'size': ['7pt', '8pt', '9pt', '10pt', '12pt', '14pt', '16pt', '18pt', '20pt', '24pt', '30pt'] }],
-            [{ 'line-height': ['0.5', '0.8', '1', '1.15', '1.5', '2', '2.5'] }],
-            ['bold', 'italic', 'underline', 'strike'],
-            [{ 'list': 'ordered' }, { 'list': 'bullet' }],
-            [{ 'align': ['', 'center', 'right', 'justify'] }],
-            ['clean']
-        ]
-    }
-});
-
-const DEFAULT_SIZE = '10pt'; 
-const DEFAULT_LINE_HEIGHT = '1.15'; 
-
-quill.formatText(0, quill.getLength(), {
-    'size': DEFAULT_SIZE,
-    'line-height': DEFAULT_LINE_HEIGHT
-});
-// quill.setSelection(0, 0);
-quill.format('size', DEFAULT_SIZE);
-quill.format('line-height', DEFAULT_LINE_HEIGHT);
-quill.blur()
-window.scrollTo(0, 0);
-
-// El toolbar tiene overflow-x:auto para poder scrollear en mobile (ver CSS
-// en cd.html). Eso recorta cualquier cosa que se salga verticalmente de su
-// caja — incluidos los desplegables de tamaño/interlineado. Mientras un
-// picker está abierto, sacamos el recorte para que no se corte.
-document.querySelectorAll('.ql-toolbar.ql-snow').forEach((toolbar) => {
-    const pickerObserver = new MutationObserver(() => {
-        const hasExpanded = toolbar.querySelector('.ql-picker.ql-expanded');
-        toolbar.classList.toggle('ql-toolbar-picker-open', Boolean(hasExpanded));
-    });
-    toolbar.querySelectorAll('.ql-picker').forEach((picker) => {
-        pickerObserver.observe(picker, { attributes: true, attributeFilter: ['class'] });
-    });
-});
-// =============================================================
-// 6. GENERADOR DE PDF Y RASTERIZADO (jsPDF + html2canvas)
+// 5. GENERADOR DE PDF Y RASTERIZADO (jsPDF + html2canvas)
 // =============================================================
 async function generatePDF(correo, output = 'pdf') {
     const { jsPDF } = window.jspdf;
@@ -482,7 +430,7 @@ async function generatePDF(correo, output = 'pdf') {
         cp_dt_bis: document.getElementById('cp_dt').value,
         localidad_dt_bis: document.getElementById('localidad_dt').value,
         provincia_dt_bis: document.getElementById('provincia_dt').value,
-        cuerpo_cd: quill.root.innerHTML
+        cuerpo_cd: editor.innerHTML
     };
 
     const config = {

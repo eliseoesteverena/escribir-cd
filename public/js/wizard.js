@@ -73,9 +73,9 @@
         }
 
         if (step === 3) {
-            // `quill` es la instancia creada en index.js (ambos scripts
-            // comparten el mismo scope global de la página).
-            if (typeof quill !== 'undefined' && quill.getText().trim().length === 0) {
+            // `editor` es el div contenteditable creado en editor.js (todos
+            // los scripts clásicos comparten el mismo scope global de la página).
+            if (typeof editor !== 'undefined' && editor.textContent.trim().length === 0) {
                 showError('Escribí el cuerpo de la carta antes de continuar.');
                 return false;
             }

@@ -7,7 +7,6 @@
     <title>Escribir Carta Documento | escribirCD</title>
     
     <link rel="stylesheet" href="./css/tailwind-cd.css">
-    <link href="css/quill.snow.css" rel="stylesheet">
     <link rel="icon" type="image/png" href="/icons/favicon-96x96.png" sizes="96x96" />
 <link rel="icon" type="image/svg+xml" href="/icons/favicon.svg" />
 <link rel="shortcut icon" href="/icons/favicon.ico" />
@@ -18,7 +17,6 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&display=swap" rel="stylesheet">
     
-    <script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
@@ -70,32 +68,39 @@
             max-width:19cm;
         }
         /* Ajustes básicos para el editor */
-        #editor { min-height: 250px; background: white; border-radius: 0 0 0.5rem 0.5rem; }
-        .ql-toolbar { background: #f8fafc; border-radius: 0.5rem 0.5rem 0 0; }
+        #editor {
+            min-height: 250px;
+            background: white;
+            border-radius: 0 0 0.5rem 0.5rem;
+            outline: none;
+            overflow-wrap: anywhere;
+            word-break: break-word;
+            max-width: 100%;
+        }
+        #editor:empty::before {
+            content: 'Escribí acá el cuerpo de la carta...';
+            color: #9ca3af;
+            pointer-events: none;
+        }
+        #toolbar {
+            background: #f8fafc;
+            border-radius: 0.5rem 0.5rem 0 0;
+        }
 
         /* Toolbar con scroll horizontal contenido: en mobile no entran todos
            los botones. Se desliza en vez de desbordar la página, sin mostrar
            la barra de scroll, con un desvanecido en los bordes como pista visual. */
-        .ql-toolbar.ql-snow {
+        #toolbar {
             overflow-x: auto;
             overflow-y: hidden;
-            white-space: nowrap;
+            flex-wrap: nowrap;
             -ms-overflow-style: none;
             scrollbar-width: none;
             -webkit-mask-image: linear-gradient(to right, transparent 0, black 20px, black calc(100% - 20px), transparent 100%);
             mask-image: linear-gradient(to right, transparent 0, black 20px, black calc(100% - 20px), transparent 100%);
         }
-        .ql-toolbar.ql-snow::-webkit-scrollbar {
+        #toolbar::-webkit-scrollbar {
             display: none;
-        }
-        .ql-toolbar.ql-snow .ql-formats {
-            display: inline-block;
-            vertical-align: top;
-        }
-        /* Mientras un picker (tamaño/interlineado) está abierto, el toolbar
-           deja de recortar overflow para que el desplegable no quede cortado. */
-        .ql-toolbar.ql-snow.ql-toolbar-picker-open {
-            overflow: visible;
         }
         input[type="text"] { width: 100%; padding: 0.5rem; border: 1px solid #e2e8f0; border-radius: 0.375rem; margin-top: 0.25rem; font-size: 0.875rem; }
         input[type="text"]:focus { outline: none; border-color: #2563eb; ring: 2px solid #bfdbfe; }
@@ -124,15 +129,6 @@
             opacity: 1;
             pointer-events: auto;
             display: flex;
-        }
-        
-        /* Estilos por defecto para el contenedor de texto de Quill */
-        #editor .ql-editor {
-            font-size: 10pt;
-            line-height: 1.15;
-            overflow-wrap: anywhere;
-            word-break: break-word;
-            max-width: 100%;
         }
 
         /* Wrapper cuyo ancho alterna el toggle "Diseño de impresión" */
@@ -332,7 +328,71 @@
             <p class="text-xs text-gray-400 mb-3" id="print-preview-hint">Activá el switch para ver el ancho real de impresión (podés deslizar el dedo para recorrerlo).</p>
             <div id="editor-scroll-container" class="mb-8">
                 <div class="bg-white border rounded-xl shadow-sm" id="editor-width-wrapper">
-                    <div id="editor"></div>
+                    <!-- Toolbar -->
+                    <div id="toolbar" class="flex items-center gap-1 border-b border-gray-200 p-2">
+                        <button type="button" data-cmd="bold" class="editor-btn shrink-0 w-10 h-10 rounded hover:bg-gray-100 flex items-center justify-center" style="touch-action:manipulation;" aria-label="Negrita">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4h8a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"/><path d="M6 12h9a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"/></svg>
+                        </button>
+                        <button type="button" data-cmd="italic" class="editor-btn shrink-0 w-10 h-10 rounded hover:bg-gray-100 flex items-center justify-center" style="touch-action:manipulation;" aria-label="Cursiva">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="4" x2="10" y2="4"/><line x1="14" y1="20" x2="5" y2="20"/><line x1="15" y1="4" x2="9" y2="20"/></svg>
+                        </button>
+                        <button type="button" data-cmd="underline" class="editor-btn shrink-0 w-10 h-10 rounded hover:bg-gray-100 flex items-center justify-center" style="touch-action:manipulation;" aria-label="Subrayado">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3v7a6 6 0 0 0 12 0V3"/><line x1="4" y1="21" x2="20" y2="21"/></svg>
+                        </button>
+                        <button type="button" data-cmd="strikeThrough" class="editor-btn shrink-0 w-10 h-10 rounded hover:bg-gray-100 flex items-center justify-center" style="touch-action:manipulation;" aria-label="Tachado">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4H9a3 3 0 0 0-2.83 4"/><path d="M14 12a4 4 0 0 1 0 8H6"/><line x1="4" y1="12" x2="20" y2="12"/></svg>
+                        </button>
+
+                        <span class="w-px h-6 bg-gray-200 mx-1 shrink-0"></span>
+
+                        <select id="fontFamily" class="shrink-0 h-10 rounded border border-gray-300 text-sm px-1" style="touch-action:manipulation;">
+                            <option value="sans" selected>Sans Serif</option>
+                            <option value="serif">Serif</option>
+                            <option value="mono">Monoespaciada</option>
+                        </select>
+
+                        <select id="fontSize" class="shrink-0 h-10 rounded border border-gray-300 text-sm px-1" style="touch-action:manipulation;">
+                            <option value="8pt">8pt</option>
+                            <option value="9pt">9pt</option>
+                            <option value="10pt" selected>10pt</option>
+                            <option value="11pt">11pt</option>
+                            <option value="12pt">12pt</option>
+                            <option value="14pt">14pt</option>
+                        </select>
+
+                        <select id="lineHeight" class="shrink-0 h-10 rounded border border-gray-300 text-sm px-1" style="touch-action:manipulation;">
+                            <option value="1">1</option>
+                            <option value="1.15" selected>1.15</option>
+                            <option value="1.25">1.25</option>
+                            <option value="1.5">1.5</option>
+                            <option value="1.75">1.75</option>
+                            <option value="2">2</option>
+                        </select>
+
+                        <span class="w-px h-6 bg-gray-200 mx-1 shrink-0"></span>
+
+                        <button type="button" data-cmd="justifyLeft" class="editor-btn shrink-0 w-10 h-10 rounded hover:bg-gray-100 flex items-center justify-center" style="touch-action:manipulation;" aria-label="Alinear izquierda">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="17" y1="10" x2="3" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="17" y1="18" x2="3" y2="18"/></svg>
+                        </button>
+                        <button type="button" data-cmd="justifyCenter" class="editor-btn shrink-0 w-10 h-10 rounded hover:bg-gray-100 flex items-center justify-center" style="touch-action:manipulation;" aria-label="Centrar">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="10" x2="6" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="18" y1="18" x2="6" y2="18"/></svg>
+                        </button>
+                        <button type="button" data-cmd="justifyRight" class="editor-btn shrink-0 w-10 h-10 rounded hover:bg-gray-100 flex items-center justify-center" style="touch-action:manipulation;" aria-label="Alinear derecha">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="21" y1="10" x2="7" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="21" y1="18" x2="7" y2="18"/></svg>
+                        </button>
+                        <button type="button" data-cmd="justifyFull" class="editor-btn shrink-0 w-10 h-10 rounded hover:bg-gray-100 flex items-center justify-center" style="touch-action:manipulation;" aria-label="Justificar">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="21" y1="10" x2="3" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="21" y1="18" x2="3" y2="18"/></svg>
+                        </button>
+
+                        <span class="w-px h-6 bg-gray-200 mx-1 shrink-0"></span>
+
+                        <button type="button" id="clearFormat" class="editor-btn shrink-0 w-10 h-10 rounded hover:bg-gray-100 flex items-center justify-center" style="touch-action:manipulation;" aria-label="Borrar formato">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7V4h16v3"/><path d="M9 20h6"/><path d="M12 4v16"/><line x1="5" y1="5" x2="19" y2="19"/></svg>
+                        </button>
+                    </div>
+
+                    <!-- Editor -->
+                    <div id="editor" contenteditable="true" class="p-4" style="font-size:10pt; line-height:1.15; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;"></div>
                 </div>
             </div>
         </div><!-- /panel 3 -->
@@ -432,6 +492,7 @@
 
     <script src="js/auth.js"></script>
     <script src="js/nav.js"></script>
+    <script src="js/editor.js"></script>
     <script src="js/index.js"></script>
     <script src="js/wizard.js"></script>
     <script>
