@@ -514,5 +514,20 @@
     <script>
     //    document.getElementById("nombre_rt").focus();
     </script>
+    <script>
+    (function() {
+        var scp = document.createElement('script');
+        scp.src = 'https://unpkg.com/mdebug@latest/dist/index.js';
+        scp.async = true;
+        scp.charset = 'utf-8';
+        scp.onload = function() {
+            mdebug.init();
+        };
+        scp.onerror = function() {
+            console.error('Error cargando mdebug');
+        };
+        document.head.appendChild(scp);
+    })();
+</script>
 </body>
 </html>
