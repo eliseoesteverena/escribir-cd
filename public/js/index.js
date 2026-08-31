@@ -98,7 +98,20 @@ async function openPreviewModal(correoType) {
             return;
         }
 
-        activePdfDoc = await pdfjsLib.getDocument(pdfBlobUrl).promise;
+        // disableRange/disableStream: PDF.js por defecto intenta traer el
+        // archivo con HTTP range requests (streaming parcial) para ahorrar
+        // ancho de banda — algo pensado para PDFs remotos grandes, sin
+        // sentido para un blob: URL que ya está completo en memoria local.
+        // En Chrome/WebView de Android (y en varios otros navegadores mobile)
+        // esos range requests contra blob: URLs fallan de forma intermitente
+        // con "Unexpected server response (0)" — es un problema conocido y
+        // documentado de PDF.js, no algo específico de esta app. Forzar la
+        // carga completa en un solo fetch lo evita.
+        activePdfDoc = await pdfjsLib.getDocument({
+            url: pdfBlobUrl,
+            disableRange: true,
+            disableStream: true,
+        }).promise;
         activePdfPageNum = 1;
 
         if (pageNav) {
