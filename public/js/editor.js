@@ -108,6 +108,24 @@ lineHeightSel.addEventListener('change', () => {
     editor.focus();
 });
 
+// Convierte una clave de estilo JS (camelCase, ej. "fontSize") a la
+// propiedad CSS equivalente (kebab-case, "font-size") para poder usarla
+// con style.removeProperty().
+function camelToKebab(str) {
+    return str.replace(/[A-Z]/g, (m) => '-' + m.toLowerCase());
+}
+
+// Quita, de todos los descendientes de `root` que tengan estilo inline,
+// las propiedades listadas en `propNames` (kebab-case). Si a un
+// descendiente no le queda ningún estilo inline después, se le saca el
+// atributo `style` por prolijidad.
+function clearInlineStyleOnDescendants(root, propNames) {
+    root.querySelectorAll('[style]').forEach((el) => {
+        propNames.forEach((prop) => el.style.removeProperty(prop));
+        if (el.getAttribute('style') === '') el.removeAttribute('style');
+    });
+}
+
 function applyStyleToSelection(styles) {
     const sel = window.getSelection();
     if (!sel.rangeCount || sel.isCollapsed) return;
@@ -122,6 +140,19 @@ function applyStyleToSelection(styles) {
         span.appendChild(fragment);
         range.insertNode(span);
     }
+    // El contenido recién envuelto puede incluir spans previos con la
+    // MISMA propiedad — típicamente al reajustar un tamaño de fuente ya
+    // aplicado (por ejemplo, achicar de 10pt a 6pt un texto que ya
+    // estaba en 10pt). En ese caso el span viejo queda anidado COMO
+    // HIJO del nuevo (surroundContents cuando la selección coincide
+    // exactamente con sus bordes, o extractContents clonándolo cuando
+    // la coincidencia es parcial), y como son estilos inline, el hijo
+    // siempre gana sobre el padre: el cambio nuevo queda invisible,
+    // tapado por el viejo. Lo limpiamos DESPUÉS de envolver — nunca
+    // antes — porque para entonces ese contenido ya quedó aislado
+    // dentro del span nuevo y no arriesgamos tocar texto que quedó
+    // afuera de la selección real.
+    clearInlineStyleOnDescendants(span, Object.keys(styles).map(camelToKebab));
     sel.removeAllRanges();
     const newRange = document.createRange();
     newRange.selectNodeContents(span);
@@ -142,6 +173,10 @@ function getBlockElement(node) {
 function applyLineHeightToBlock(value) {
     const sel = window.getSelection();
     if (!sel.rangeCount) {
+        // Igual que abajo con los bloques: si algún descendiente tiene
+        // line-height inline propio (pegado desde afuera, o de una
+        // pasada anterior), tapa el que se está por aplicar acá.
+        clearInlineStyleOnDescendants(editor, ['line-height']);
         editor.style.lineHeight = value;
         return;
     }
@@ -162,7 +197,10 @@ function applyLineHeightToBlock(value) {
         if (blocks.size === 0) blocks.add(getBlockElement(range.startContainer));
     }
 
-    blocks.forEach((b) => { b.style.lineHeight = value; });
+    blocks.forEach((b) => {
+        clearInlineStyleOnDescendants(b, ['line-height']);
+        b.style.lineHeight = value;
+    });
 }
 
 // --- Sincroniza estado visual de botones (bold/italic/underline/strike activos) ---
