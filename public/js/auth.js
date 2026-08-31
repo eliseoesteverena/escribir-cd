@@ -73,6 +73,8 @@ async function authSignOut() {
         const res = await fetch('/api/auth/sign-out', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: '{}',
         });
         if (!res.ok) {
             const bodyText = await res.text().catch(() => '');
