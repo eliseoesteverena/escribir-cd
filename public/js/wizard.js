@@ -132,7 +132,14 @@
 
     if (btnNext) {
         btnNext.addEventListener('click', () => {
-            if (!validateStep(currentStep)) return;
+            // Antes: `if (!validateStep(currentStep)) return;` frenaba el
+            // avance si faltaba el nombre de remitente/destinatario o el
+            // cuerpo estaba vacío. Se saca ese freno a pedido: ahora el
+            // wizard nunca bloquea el paso siguiente por datos faltantes.
+            // `validateStep`/`showError` quedan definidas y sin uso — se
+            // pueden reconectar más adelante si hace falta mostrar un aviso
+            // no bloqueante.
+            clearError();
             if (currentStep < TOTAL_STEPS) {
                 currentStep++;
                 renderStep();

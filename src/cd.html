@@ -506,28 +506,41 @@
         </div>
     </div>
 
+    <!-- ========================================== -->
+    <!-- MODAL DE CONFIRMACIÓN: datos ya cargados vs. extracción con IA -->
+    <!-- ========================================== -->
+    <div id="extract-confirm-modal" class="fixed inset-0 z-50 hidden bg-gray-900/60 backdrop-blur-sm flex items-center justify-center p-4 opacity-0 transition-opacity duration-300">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden transform scale-95 transition-transform duration-300" id="extract-confirm-modal-content">
+            <div class="flex items-start justify-between px-6 py-4 border-b bg-gray-50">
+                <div>
+                    <h3 class="font-bold text-lg text-gray-800">Ya hay datos cargados</h3>
+                    <p class="text-xs text-gray-500 mt-1">Algunos campos ya tenían información escrita antes de esta extracción.</p>
+                </div>
+                <button id="extract-confirm-close-btn" class="text-gray-400 hover:text-gray-700 p-1 -mr-1 -mt-1" aria-label="Cerrar">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <div class="px-6 py-5">
+                <p class="text-sm text-gray-600">¿Qué querés hacer con lo que se acaba de extraer del documento?</p>
+            </div>
+            <div class="px-6 pb-6 flex flex-col gap-2">
+                <button id="extract-confirm-insert-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg text-sm font-medium transition-colors">
+                    Usar los datos extraídos
+                </button>
+                <button id="extract-confirm-keep-btn" class="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors">
+                    Conservar lo que ya escribí
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script src="js/auth.js"></script>
     <script src="js/nav.js"></script>
     <script src="js/editor.js"></script>
-    <script src="js/index.js?v=1.21"></script>
+    <script src="js/index.js"></script>
     <script src="js/wizard.js"></script>
     <script>
     //    document.getElementById("nombre_rt").focus();
     </script>
-    <script>
-    (function() {
-        var scp = document.createElement('script');
-        scp.src = 'https://unpkg.com/mdebug@latest/dist/index.js';
-        scp.async = true;
-        scp.charset = 'utf-8';
-        scp.onload = function() {
-            mdebug.init();
-        };
-        scp.onerror = function() {
-            console.error('Error cargando mdebug');
-        };
-        document.head.appendChild(scp);
-    })();
-</script>
 </body>
 </html>

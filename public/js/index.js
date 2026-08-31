@@ -392,6 +392,65 @@ function showToast(message, type = 'loading', duration = 3000) {
 }
 
 
+// ¿Hay algo ya cargado a mano (campos del form o cuerpo del editor) antes
+// de esta extracción? Si es así, hay que preguntar antes de pisarlo.
+function hasExistingFormData() {
+    const fieldIds = [
+        'nombre_rt', 'domicilio_rt', 'cp_rt', 'localidad_rt', 'provincia_rt',
+        'nombre_dt', 'domicilio_dt', 'cp_dt', 'localidad_dt', 'provincia_dt',
+    ];
+    const hasFieldValue = fieldIds.some((id) => {
+        const el = document.getElementById(id);
+        return el && el.value.trim().length > 0;
+    });
+    const hasBodyValue = typeof editor !== 'undefined' && editor && editor.textContent.trim().length > 0;
+    return hasFieldValue || hasBodyValue;
+}
+
+// Muestra el modal de conflicto (markup en cd.html, mismo patrón visual
+// que #preview-modal) y devuelve una promesa que resuelve a 'insert' o
+// 'keep'. Cerrar con la X cuenta como 'keep' — es la opción que nunca
+// pierde nada, así que es el default seguro si el usuario no elige.
+function askKeepOrInsertExtracted() {
+    return new Promise((resolve) => {
+        const modal = document.getElementById('extract-confirm-modal');
+        const modalContent = document.getElementById('extract-confirm-modal-content');
+        const insertBtn = document.getElementById('extract-confirm-insert-btn');
+        const keepBtn = document.getElementById('extract-confirm-keep-btn');
+        const closeBtn = document.getElementById('extract-confirm-close-btn');
+
+        if (!modal || !modalContent || !insertBtn || !keepBtn) {
+            // Si el modal no está en el DOM por algún motivo, no trabamos
+            // el flujo — nos quedamos con el comportamiento previo.
+            resolve('insert');
+            return;
+        }
+
+        function close(result) {
+            modal.classList.add('opacity-0');
+            modalContent.classList.add('scale-95');
+            setTimeout(() => modal.classList.add('hidden'), 300);
+            insertBtn.removeEventListener('click', onInsert);
+            keepBtn.removeEventListener('click', onKeep);
+            if (closeBtn) closeBtn.removeEventListener('click', onKeep);
+            resolve(result);
+        }
+
+        function onInsert() { close('insert'); }
+        function onKeep() { close('keep'); }
+
+        insertBtn.addEventListener('click', onInsert);
+        keepBtn.addEventListener('click', onKeep);
+        if (closeBtn) closeBtn.addEventListener('click', onKeep);
+
+        modal.classList.remove('hidden');
+        setTimeout(() => {
+            modal.classList.remove('opacity-0');
+            modalContent.classList.remove('scale-95');
+        }, 10);
+    });
+}
+
 async function callGeminiExtractionAPI(inputContent) {
     // Feedback visual al usuario
     document.body.style.cursor = 'wait';
@@ -411,8 +470,20 @@ async function callGeminiExtractionAPI(inputContent) {
             // Si el backend devolvió { message: "..." }, lo usamos para el error
             throw new Error(data.message || `Error en el servidor (${response.status})`);
         }
-        
-        // Si salió todo bien, poblamos el formulario
+
+        // Si ya había datos cargados a mano, preguntamos antes de pisarlos.
+        // populateFormWithExtractedData ya es selectiva por sí misma —solo
+        // toca los campos que vienen con valor en `data`—, así que elegir
+        // "usar lo extraído" nunca resetea un campo que la IA no completó.
+        if (hasExistingFormData()) {
+            showToast('Encontramos datos extraídos — elegí qué hacer', 'success', 2500);
+            const choice = await askKeepOrInsertExtracted();
+            if (choice === 'keep') {
+                showToast('Se conservaron los datos ya cargados.', 'success', 3000);
+                return;
+            }
+        }
+
         populateFormWithExtractedData(data);
         showToast('Datos completados con IA ✓', 'success', 3000);
         
