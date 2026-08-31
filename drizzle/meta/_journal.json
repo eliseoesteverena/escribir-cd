@@ -15,6 +15,13 @@
       "when": 1787525749837,
       "tag": "0001_massive_maelstrom",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1788210046916,
+      "tag": "0002_flat_mysterio",
+      "breakpoints": true
     }
   ]
 }
