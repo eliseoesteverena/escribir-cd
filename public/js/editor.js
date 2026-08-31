@@ -170,14 +170,52 @@ function getBlockElement(node) {
     return editor; // si no hay bloque explícito, afecta todo el editor
 }
 
+// El interlineado aplicado directo en el propio `#editor` (caso "todo el
+// editor", o cuando getBlockElement no encuentra un bloque explícito —
+// típico con texto plano separado por <br>, sin <div>/<p> por línea)
+// NUNCA llegaba al PDF: la generación del cuerpo usa `editor.innerHTML`,
+// que serializa solo los HIJOS del editor, no su propio atributo
+// `style`. Por eso, en vez de setear el line-height en el editor mismo,
+// envolvemos su contenido actual en un <div> — que sí es un hijo, y por
+// lo tanto sí viaja adentro del innerHTML junto con el resto del cuerpo.
+function applyLineHeightToWholeEditor(value) {
+    clearInlineStyleOnDescendants(editor, ['line-height']);
+    editor.style.removeProperty('line-height');
+
+    // Reusamos el wrapper si ya existe (para no acumular uno nuevo cada
+    // vez que se cambia el interlineado global).
+    let wrapper = editor.firstElementChild;
+    const isExistingWrapper =
+        editor.children.length === 1 &&
+        wrapper &&
+        wrapper.tagName === 'DIV' &&
+        wrapper.dataset.lineHeightWrapper === '1';
+
+    if (!isExistingWrapper) {
+        wrapper = document.createElement('div');
+        wrapper.dataset.lineHeightWrapper = '1';
+        while (editor.firstChild) {
+            wrapper.appendChild(editor.firstChild);
+        }
+        editor.appendChild(wrapper);
+    }
+    wrapper.style.lineHeight = value;
+
+    // Recolocar el cursor al final del wrapper para poder seguir
+    // escribiendo con normalidad después de aplicar el cambio.
+    const range = document.createRange();
+    range.selectNodeContents(wrapper);
+    range.collapse(false);
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+    savedRange = range.cloneRange();
+}
+
 function applyLineHeightToBlock(value) {
     const sel = window.getSelection();
     if (!sel.rangeCount) {
-        // Igual que abajo con los bloques: si algún descendiente tiene
-        // line-height inline propio (pegado desde afuera, o de una
-        // pasada anterior), tapa el que se está por aplicar acá.
-        clearInlineStyleOnDescendants(editor, ['line-height']);
-        editor.style.lineHeight = value;
+        applyLineHeightToWholeEditor(value);
         return;
     }
     const range = sel.getRangeAt(0);
@@ -198,8 +236,15 @@ function applyLineHeightToBlock(value) {
     }
 
     blocks.forEach((b) => {
-        clearInlineStyleOnDescendants(b, ['line-height']);
-        b.style.lineHeight = value;
+        if (b === editor) {
+            // Mismo caso que arriba: no hay bloque explícito que envuelva
+            // la selección, así que aplicamos al editor completo (vía
+            // wrapper) en vez de al `#editor` directamente.
+            applyLineHeightToWholeEditor(value);
+        } else {
+            clearInlineStyleOnDescendants(b, ['line-height']);
+            b.style.lineHeight = value;
+        }
     });
 }
 
