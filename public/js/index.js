@@ -88,30 +88,31 @@ async function openPreviewModal(correoType) {
     wrapper.style.opacity = '0.4';
     if (pageNav) pageNav.classList.add('hidden');
 
-    let pdfBlobUrl;
+    let pdfArrayBuffer;
     try {
-        // Generar la URL del Blob del PDF (misma función que usa la descarga)
-        pdfBlobUrl = await generatePDF(correoType, 'bloburl');
+        // Antes: generatePDF devolvía una blob: URL y se la pasábamos a
+        // pdfjsLib.getDocument({ url }). Eso obliga a PDF.js a "descargarla"
+        // de vuelta vía XHR/fetch — aunque sea local, pasa por la misma
+        // maquinaria de red que un PDF remoto. En Chrome/WebView de Android
+        // esa descarga del blob: falla de forma intermitente con
+        // "Unexpected server response (0)" (bug conocido y documentado de
+        // PDF.js con blob: URLs en mobile), y forzar disableRange/disableStream
+        // solo cambia qué motor de red falla (XHR en vez de fetch), no
+        // elimina el problema de fondo.
+        //
+        // La solución real es no pasar por red en absoluto: jsPDF ya tiene
+        // el PDF completo en memoria, así que le pedimos los bytes crudos
+        // (arraybuffer) en vez de una blob: URL, y se los pasamos a PDF.js
+        // vía la opción `data`. PDF.js parsea esos bytes directo en memoria,
+        // sin ningún fetch de por medio.
+        pdfArrayBuffer = await generatePDF(correoType, 'arraybuffer');
 
-        if (!pdfBlobUrl) {
-            console.error('No se pudo generar el blob del PDF.');
+        if (!pdfArrayBuffer) {
+            console.error('No se pudo generar el PDF.');
             return;
         }
 
-        // disableRange/disableStream: PDF.js por defecto intenta traer el
-        // archivo con HTTP range requests (streaming parcial) para ahorrar
-        // ancho de banda — algo pensado para PDFs remotos grandes, sin
-        // sentido para un blob: URL que ya está completo en memoria local.
-        // En Chrome/WebView de Android (y en varios otros navegadores mobile)
-        // esos range requests contra blob: URLs fallan de forma intermitente
-        // con "Unexpected server response (0)" — es un problema conocido y
-        // documentado de PDF.js, no algo específico de esta app. Forzar la
-        // carga completa en un solo fetch lo evita.
-        activePdfDoc = await pdfjsLib.getDocument({
-            url: pdfBlobUrl,
-            disableRange: true,
-            disableStream: true,
-        }).promise;
+        activePdfDoc = await pdfjsLib.getDocument({ data: pdfArrayBuffer }).promise;
         activePdfPageNum = 1;
 
         if (pageNav) {
@@ -125,11 +126,6 @@ async function openPreviewModal(correoType) {
     } catch (error) {
         console.error('Error al generar la vista previa:', error);
         alert("Hubo un error al generar la vista previa.");
-    } finally {
-        // El documento ya quedó completamente parseado en memoria por
-        // PDF.js — revocar la blob URL acá no afecta la navegación entre
-        // páginas que pase después.
-        if (pdfBlobUrl) URL.revokeObjectURL(pdfBlobUrl);
     }
 }
 
@@ -865,6 +861,8 @@ async function generatePDF(correo, output = 'pdf') {
             pdf.save(`Carta_Documento_${correo === 'cd_correo_andreani' ? 'Andreani' : 'Correo_Argentino'}.pdf`);
         } else if (output === 'bloburl') {
             return pdf.output('bloburl'); // Ideal para embeber en el iframe
+        } else if (output === 'arraybuffer') {
+            return pdf.output('arraybuffer'); // Bytes crudos, para pdfjsLib.getDocument({ data })
         } else {
             return firstCanvas;
         }
