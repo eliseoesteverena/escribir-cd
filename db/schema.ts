@@ -4,9 +4,9 @@
 // se define y se exporta acá. `drizzle-kit generate` compara este archivo
 // contra el snapshot anterior y genera el SQL de migración en /drizzle.
 //
-// Fase 3 (Persistencia de la app) suma acá `letters`. `templates`,
-// `share_links` y `subscriptions` quedan para más adelante (subscriptions
-// en particular va atada a Mercado Pago, Fase 4).
+// Fase 3 (Persistencia de la app) suma acá `letters`, `templates` y
+// `share_links`. `subscriptions` queda para la Fase 4 (va atada a
+// Mercado Pago).
 
 import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core';
 
@@ -109,3 +109,46 @@ export const letters = sqliteTable('letters', {
 
 export type Letter = typeof letters.$inferSelect;
 export type NewLetter = typeof letters.$inferInsert;
+
+// `templates`: igual criterio que `letters` (json para remitente/destinatario,
+// id generado en la app). A diferencia del diseño original de la doc, SÍ tiene
+// `updatedAt` — se decidió sumarlo porque las plantillas van a ser editables
+// después de creadas, no solo de lectura. No tiene `courier`: una plantilla es
+// contenido reutilizable para cualquiera de los dos correos, no está atada a
+// uno en particular.
+export const templates = sqliteTable('templates', {
+    id: text('id').primaryKey(),
+    userId: text('user_id')
+        .notNull()
+        .references(() => user.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    remitente: text('remitente', { mode: 'json' }).notNull(),
+    destinatario: text('destinatario', { mode: 'json' }).notNull(),
+    cuerpoHtml: text('cuerpo_html').notNull(),
+    createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
+    updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull(),
+});
+
+export type Template = typeof templates.$inferSelect;
+export type NewTemplate = typeof templates.$inferInsert;
+
+// `share_links`: un link público (por token) hacia UNA carta puntual.
+// `permission: 'view' | 'edit'` — con 'edit' habilitado, quien tenga el link
+// puede modificar la carta original del dueño sin tener cuenta (la
+// autenticación es el token en sí, no una sesión de BetterAuth). Ver
+// functions/api/share/[token].js. `expiresAt` es opcional: null = no expira.
+// Borrar la carta borra en cascada sus share_links (no tiene sentido un link
+// húerfano apuntando a una carta que ya no existe).
+export const shareLinks = sqliteTable('share_links', {
+    id: text('id').primaryKey(),
+    letterId: text('letter_id')
+        .notNull()
+        .references(() => letters.id, { onDelete: 'cascade' }),
+    token: text('token').notNull().unique(),
+    permission: text('permission').notNull(), // 'view' | 'edit'
+    expiresAt: integer('expires_at', { mode: 'timestamp_ms' }),
+    createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
+});
+
+export type ShareLink = typeof shareLinks.$inferSelect;
+export type NewShareLink = typeof shareLinks.$inferInsert;
