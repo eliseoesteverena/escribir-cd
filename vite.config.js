@@ -22,6 +22,8 @@ export default defineConfig({
         cd: resolve(__dirname, 'src/cd.html'),
         ayuda: resolve(__dirname, 'src/ayuda.html'),
         login: resolve(__dirname, 'src/login.html'),
+        'mis-cartas': resolve(__dirname, 'src/mis-cartas.html'),
+        compartir: resolve(__dirname, 'src/compartir.html'),
       },
     },
   },
