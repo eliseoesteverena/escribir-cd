@@ -11,7 +11,7 @@ import { createAuth } from '../../../db/auth';
 import { letters } from '../../../db/schema';
 import { eq, desc } from 'drizzle-orm';
 
-const COURIERS = new Set(['correo_argentino', 'andreani']);
+const COURIERS = new Set(['cd_correo_arg', 'cd_correo_andreani']);
 
 function json(data, status = 200) {
     return new Response(JSON.stringify(data), {

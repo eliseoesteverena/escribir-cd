@@ -84,7 +84,7 @@ export async function onRequestPut(context) {
 
         const { courier, remitente, destinatario, cuerpo_html } = body ?? {};
         const updates = { updatedAt: Date.now() };
-        const COURIERS = new Set(['correo_argentino', 'andreani']);
+        const COURIERS = new Set(['cd_correo_arg', 'cd_correo_andreani']);
 
         if (courier !== undefined) {
             if (!COURIERS.has(courier)) {

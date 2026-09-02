@@ -1,0 +1,100 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mis Cartas | escribirCD</title>
+
+    <link rel="stylesheet" href="./css/tailwind-cd.css">
+    <link rel="icon" type="image/png" href="/icons/favicon-96x96.png" sizes="96x96" />
+    <link rel="icon" type="image/svg+xml" href="/icons/favicon.svg" />
+    <link rel="shortcut icon" href="/icons/favicon.ico" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-title" content="escribirCD" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&display=swap" rel="stylesheet">
+</head>
+<body class="bg-gray-50 text-gray-900 antialiased min-h-screen relative">
+
+    <header class="w-full bg-white border-b border-gray-100 sticky top-0 z-50">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="h-16 flex items-center justify-between">
+
+                <!-- Logo -->
+                <a href="./" class="flex items-center shrink-0">
+                    <span class="text-xl font-extrabold tracking-tight text-gray-900">
+                        escribir<span class="text-blue-600">CD</span>
+                    </span>
+                </a>
+
+                <!-- Navegación Desktop -->
+                <nav class="hidden md:flex items-center space-x-6 text-sm font-medium text-gray-600">
+                    <a href="cd.html" class="hover:text-blue-600 transition-colors">Formulario</a>
+                    <a href="mis-cartas.html" class="text-blue-600 transition-colors">Mis Cartas</a>
+                    <a href="ayuda.html" class="hover:text-blue-600 transition-colors">Cómo se completa</a>
+                    <div id="nav-auth-desktop">
+                        <a href="login.html" class="hover:text-blue-600 transition-colors">Iniciar sesión</a>
+                    </div>
+                </nav>
+
+                <!-- Botón Menú Hamburguesa (Móvil) -->
+                <button id="btn-mobile-menu" type="button" class="md:hidden p-2 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-100 focus:outline-none transition-colors" aria-label="Abrir menú">
+                    <svg id="icon-hamburger" class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"></path>
+                    </svg>
+                    <svg id="icon-close" class="w-6 h-6 hidden" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+
+            </div>
+        </div>
+
+        <!-- Menú Desplegable Móvil -->
+        <div id="mobile-menu" class="w-full absolute hidden md:hidden border-t border-gray-100 bg-white px-4 pt-2 pb-4 space-y-1 shadow-lg">
+            <a href="cd.html" class="block px-3 py-2.5 rounded-lg text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50 transition-colors">
+                Formulario
+            </a>
+            <a href="mis-cartas.html" class="block px-3 py-2.5 rounded-lg text-base font-medium text-blue-600 bg-blue-50 transition-colors">
+                Mis Cartas
+            </a>
+            <a href="ayuda.html" class="block px-3 py-2.5 rounded-lg text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50 transition-colors">
+                Cómo se completa
+            </a>
+            <div id="nav-auth-mobile" class="pt-2 mt-2 border-t border-gray-100">
+                <a href="login.html" class="block px-3 py-2.5 rounded-lg text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50 transition-colors">
+                    Iniciar sesión
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-4 max-w-3xl pb-12 py-6">
+        <div class="flex items-center justify-between mb-6 gap-3 flex-wrap">
+            <h1 class="text-2xl font-bold text-primary">Mis Cartas</h1>
+            <a href="cd.html" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition-colors">
+                + Nueva carta
+            </a>
+        </div>
+
+        <p id="letters-status" class="hidden text-sm rounded-lg p-3 mb-4"></p>
+
+        <p id="letters-loading" class="text-sm text-gray-400">Cargando tus cartas…</p>
+
+        <div id="letters-empty" class="hidden bg-white border rounded-xl p-8 text-center text-sm text-gray-500">
+            Todavía no guardaste ninguna carta.
+            <a href="cd.html" class="text-blue-600 font-medium hover:underline">Creá la primera</a>.
+        </div>
+
+        <ul id="letters-list" class="space-y-3"></ul>
+    </main>
+
+    <script src="js/auth.js"></script>
+    <script src="js/nav.js"></script>
+    <script src="js/letters.js"></script>
+    <script src="js/mis-cartas.js"></script>
+</body>
+</html>

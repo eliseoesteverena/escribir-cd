@@ -86,12 +86,8 @@ export const verification = sqliteTable('verification', {
 // exacta de esos objetos la define el frontend (wizard, pasos 1 y 2).
 //
 // `courier` es texto libre validado en la capa de API (no hay enum
-// nativo en SQLite). Valores usados: 'correo_argentino' | 'andreani'.
-// ⚠️ Confirmar que coincide con las claves que ya usa `generatePDF()`
-// en public/js/index.js (la doc menciona internamente 'cd_correo_arg' /
-// 'cd_correo_andreani' para el objeto de coordenadas FIELD_POSITIONS) —
-// si el frontend usa otro string para identificar el correo, alinear acá
-// antes de conectar el guardado real.
+// nativo en SQLite). Valores confirmados contra generatePDF() y los
+// onclick de cd.html: 'cd_correo_arg' | 'cd_correo_andreani'.
 // ---------------------------------------------------------------
 
 export const letters = sqliteTable('letters', {

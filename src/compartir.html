@@ -4,70 +4,42 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Escribir Carta Documento | escribirCD</title>
-    
+    <title>Carta Documento compartida | escribirCD</title>
+
     <link rel="stylesheet" href="./css/tailwind-cd.css">
     <link rel="icon" type="image/png" href="/icons/favicon-96x96.png" sizes="96x96" />
-<link rel="icon" type="image/svg+xml" href="/icons/favicon.svg" />
-<link rel="shortcut icon" href="/icons/favicon.ico" />
-<link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png" />
-<meta name="apple-mobile-web-app-title" content="escribirCD" />
-    
+    <link rel="icon" type="image/svg+xml" href="/icons/favicon.svg" />
+    <link rel="shortcut icon" href="/icons/favicon.ico" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-title" content="escribirCD" />
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&display=swap" rel="stylesheet">
-    
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script>
-        // Render del preview vía canvas (ver public/js/index.js) en vez del
-        // iframe nativo: el visor de PDF embebido de Chrome no existe en mobile.
+        // Mismo motivo que en cd.html: el visor de PDF nativo no existe en
+        // WebView de Android, así que el preview se rasteriza con PDF.js.
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
     </script>
 
-    <!-- DIAGNÓSTICO TEMPORAL: consola visible en el celular. Sacar cuando
-         se resuelva el 500 del signup. -->
-    <script src="https://unpkg.com/vconsole@latest/dist/vconsole.min.js"></script>
-    <script>var vConsole = new VConsole();</script>
-
-    
-      <script type="application/ld+json">
-    {
-        "@context": "https://schema.org",
-        "@type": "WebApplication",
-        "name": "escribirCD",
-        "url": "https://escribir-cd.pages.dev",
-        "applicationCategory": "BusinessApplication",
-        "operatingSystem": "All",
-        "offers": {
-            "@type": "Offer",
-            "price": "0",
-            "priceCurrency": "ARS"
-        },
-        "description": "Herramienta gratuita para la redacción, alineación e impresión de Cartas Documento oficiales de Correo Argentino y Andreani."
-    }
-</script>
-
-    
+    <!-- Mismo CSS que cd.html (editor, toolbar con scroll, drop-overlay,
+         ancho de impresión) — copiado tal cual para que editor.js/index.js
+         se comporten idéntico acá. -->
     <style>
         :root {
-            /* Ancho real de impresión del cuerpo de la carta. Ajustable acá
-               mientras prueban — lo usa el toggle "Diseño de impresión". */
             --print-preview-width: 19cm;
         }
-
-        /* Backstop: ningún descendiente puede forzar scroll horizontal
-           de la página completa, sin importar dónde se origine. */
         html, body {
             overflow-x: hidden;
         }
-
         .container {
             max-width:19cm;
         }
-        /* Ajustes básicos para el editor */
         #editor {
             min-height: 250px;
             background: white;
@@ -86,10 +58,6 @@
             background: #f8fafc;
             border-radius: 0.5rem 0.5rem 0 0;
         }
-
-        /* Toolbar con scroll horizontal contenido: en mobile no entran todos
-           los botones. Se desliza en vez de desbordar la página, sin mostrar
-           la barra de scroll, con un desvanecido en los bordes como pista visual. */
         #toolbar {
             overflow-x: auto;
             overflow-y: hidden;
@@ -104,8 +72,8 @@
         }
         input[type="text"] { width: 100%; padding: 0.5rem; border: 1px solid #e2e8f0; border-radius: 0.375rem; margin-top: 0.25rem; font-size: 0.875rem; }
         input[type="text"]:focus { outline: none; border-color: #2563eb; ring: 2px solid #bfdbfe; }
+        input[type="text"]:read-only { background: #f8fafc; color: #64748b; }
         label { font-size: 0.875rem; font-weight: 500; color: #334155; }
-        /* Indicador visual de zona de arrastre */
         #drop-overlay {
             position: fixed;
             top: 0;
@@ -124,14 +92,11 @@
             transition: opacity 0.2s ease-in-out;
             font-family: inherit;
         }
-
         #drop-overlay.active {
             opacity: 1;
             pointer-events: auto;
             display: flex;
         }
-
-        /* Wrapper cuyo ancho alterna el toggle "Diseño de impresión" */
         #editor-width-wrapper {
             width: 100%;
             max-width: 100%;
@@ -141,14 +106,10 @@
             width: var(--print-preview-width);
             max-width: none;
         }
-
-        /* Solo esta franja hace scroll horizontal cuando el ancho de
-           impresión no entra en la pantalla — nunca la página entera. */
         #editor-scroll-container {
             overflow-x: auto;
             width: 100%;
         }
-
     </style>
 </head>
 <body class="bg-gray-50 text-gray-900 antialiased min-h-screen relative">
@@ -156,46 +117,31 @@
     <header class="w-full bg-white border-b border-gray-100 sticky top-0 z-50">
         <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="h-16 flex items-center justify-between">
-                
-                <!-- Logo -->
                 <a href="./" class="flex items-center shrink-0">
                     <span class="text-xl font-extrabold tracking-tight text-gray-900">
                         escribir<span class="text-blue-600">CD</span>
                     </span>
                 </a>
-
-                <!-- Navegación Desktop -->
                 <nav class="hidden md:flex items-center space-x-6 text-sm font-medium text-gray-600">
                     <a href="cd.html" class="hover:text-blue-600 transition-colors">Formulario</a>
-                    <a href="mis-cartas.html" class="hover:text-blue-600 transition-colors">Mis Cartas</a>
                     <a href="ayuda.html" class="hover:text-blue-600 transition-colors">Cómo se completa</a>
                     <div id="nav-auth-desktop">
                         <a href="login.html" class="hover:text-blue-600 transition-colors">Iniciar sesión</a>
                     </div>
                 </nav>
-
-                <!-- Botón Menú Hamburguesa (Móvil) -->
                 <button id="btn-mobile-menu" type="button" class="md:hidden p-2 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-100 focus:outline-none transition-colors" aria-label="Abrir menú">
-                    <!-- Ícono Hamburguesa (3 líneas) -->
                     <svg id="icon-hamburger" class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"></path>
                     </svg>
-                    <!-- Ícono Cerrar (X) -->
                     <svg id="icon-close" class="w-6 h-6 hidden" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path>
                     </svg>
                 </button>
-
             </div>
         </div>
-
-        <!-- Menú Desplegable Móvil -->
         <div id="mobile-menu" class="w-full absolute hidden md:hidden border-t border-gray-100 bg-white px-4 pt-2 pb-4 space-y-1 shadow-lg">
             <a href="cd.html" class="block px-3 py-2.5 rounded-lg text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50 transition-colors">
                 Formulario
-            </a>
-            <a href="mis-cartas.html" class="block px-3 py-2.5 rounded-lg text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50 transition-colors">
-                Mis Cartas
             </a>
             <a href="ayuda.html" class="block px-3 py-2.5 rounded-lg text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50 transition-colors">
                 Cómo se completa
@@ -208,87 +154,44 @@
         </div>
     </header>
 
-    <main class="container mx-auto px-4 max-w-5xl pb-12 py-3">
-        <h1 class="text-2xl font-bold mb-1 text-primary">Completar Formulario</h1>
-        <p class="text-sm text-gray-500 mb-6" id="wizard-subtitle">Paso 1 de 4 — Datos del Remitente</p>
+    <main class="container mx-auto px-4 max-w-5xl pb-12 py-6">
+        <h1 class="text-2xl font-bold mb-2 text-primary">Carta Documento compartida</h1>
+        <p id="compartir-permission-badge" class="hidden mb-6"></p>
 
-        <!-- Stepper -->
-        <ol class="flex items-center w-full mb-8" id="wizard-stepper">
-            <li class="flex items-center flex-1" data-stepper-item="1">
-                <span class="flex items-center justify-center w-8 h-8 rounded-full border-2 text-sm font-semibold shrink-0" data-stepper-circle>1</span>
-                <span class="ml-2 text-sm font-medium hidden sm:inline" data-stepper-label>Remitente</span>
-                <div class="flex-1 h-0.5 bg-gray-200 mx-3" data-stepper-line></div>
-            </li>
-            <li class="flex items-center flex-1" data-stepper-item="2">
-                <span class="flex items-center justify-center w-8 h-8 rounded-full border-2 text-sm font-semibold shrink-0" data-stepper-circle>2</span>
-                <span class="ml-2 text-sm font-medium hidden sm:inline" data-stepper-label>Destinatario</span>
-                <div class="flex-1 h-0.5 bg-gray-200 mx-3" data-stepper-line></div>
-            </li>
-            <li class="flex items-center flex-1" data-stepper-item="3">
-                <span class="flex items-center justify-center w-8 h-8 rounded-full border-2 text-sm font-semibold shrink-0" data-stepper-circle>3</span>
-                <span class="ml-2 text-sm font-medium hidden sm:inline" data-stepper-label>Cuerpo</span>
-                <div class="flex-1 h-0.5 bg-gray-200 mx-3" data-stepper-line></div>
-            </li>
-            <li class="flex items-center" data-stepper-item="4">
-                <span class="flex items-center justify-center w-8 h-8 rounded-full border-2 text-sm font-semibold shrink-0" data-stepper-circle>4</span>
-                <span class="ml-2 text-sm font-medium hidden sm:inline" data-stepper-label>Descarga</span>
-            </li>
-        </ol>
+        <p id="compartir-status" class="hidden text-sm rounded-lg p-4 mb-6"></p>
 
-        <div data-step-panel="1">
-        <!-- Top-Bar IA (Responsive) -->
-        <div class="bg-blue-50 border border-blue-100 rounded-xl p-4 mb-8 flex flex-col sm:flex-row items-start sm:items-center gap-4 text-sm text-gray-800 shadow-sm">
-            <div class="flex-shrink-0 bg-blue-100 p-2.5 rounded-full text-blue-600">
-                <!-- Ícono SVG IA -->
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M9 21L7.125 16.875L3 15L7.125 13.125L9 9L10.875 13.125L15 15L10.875 16.875L9 21ZM19 12L17.875 9.5L15.375 8.375L17.875 7.25L19 4.75L20.125 7.25L22.625 8.375L20.125 9.5L19 12ZM18 21L17.125 19.125L15.25 18.25L17.125 17.375L18 15.5L18.875 17.375L20.75 18.25L18.875 19.125L18 21Z"/>
-                </svg>
-            </div>
-            <div class="flex-1 leading-relaxed">
-                <strong class="block sm:inline font-semibold text-blue-900 mb-1 sm:mb-0">¿Tenés un archivo con los datos?</strong>
-                <span class="block sm:inline">
-                    <button id="btn-topbar-upload" class="font-semibold text-blue-700 hover:text-blue-900 underline decoration-blue-300 hover:decoration-blue-500 underline-offset-4 transition-colors">Subilo</button> 
-                    o 
-                    <button id="btn-topbar-paste" class="font-semibold text-blue-700 hover:text-blue-900 underline decoration-blue-300 hover:decoration-blue-500 underline-offset-4 transition-colors">Pegá directamente</button> 
-                    el texto en bruto y el sistema completa los campos.
-                </span>
-            </div>
-            <input type="file" id="topbar-file-input" accept=".pdf,.docx,.doc" class="hidden">
-        </div>
-
-        <!-- Sección Remitente -->
-            <section class="bg-white border rounded-xl p-5 shadow-sm">
+        <div id="compartir-content" class="hidden">
+            <!-- Sección Remitente -->
+            <section class="bg-white border rounded-xl p-5 shadow-sm mb-6">
                 <h3 class="font-bold text-gray-800 mb-4 pb-2 border-b">Datos del Remitente</h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                     <div>
                         <label for="nombre_rt">Nombre / Razón Social:</label>
-                        <input type="text" id="nombre_rt" placeholder="Ej: Juan Pérez">
+                        <input type="text" id="nombre_rt">
                     </div>
                     <div>
                         <label for="domicilio_rt">Dirección:</label>
-                        <input type="text" id="domicilio_rt" placeholder="Ej: Av. Rivadavia 1234">
+                        <input type="text" id="domicilio_rt">
                     </div>
                 </div>
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div>
                         <label for="cp_rt">Código Postal:</label>
-                        <input type="text" id="cp_rt" placeholder="Ej: C1033AAJ">
+                        <input type="text" id="cp_rt">
                     </div>
                     <div>
                         <label for="localidad_rt">Localidad:</label>
-                        <input type="text" id="localidad_rt" placeholder="Ej: CABA">
+                        <input type="text" id="localidad_rt">
                     </div>
                     <div>
                         <label for="provincia_rt">Provincia:</label>
-                        <input type="text" id="provincia_rt" placeholder="Ej: Buenos Aires">
+                        <input type="text" id="provincia_rt">
                     </div>
                 </div>
             </section>
-        </div><!-- /panel 1 -->
 
-        <div data-step-panel="2" class="hidden">
             <!-- Sección Destinatario -->
-            <section class="bg-white border rounded-xl p-5 shadow-sm">
+            <section class="bg-white border rounded-xl p-5 shadow-sm mb-6">
                 <h3 class="font-bold text-gray-800 mb-4 pb-2 border-b">Datos del Destinatario</h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                     <div>
@@ -315,9 +218,8 @@
                     </div>
                 </div>
             </section>
-        </div><!-- /panel 2 -->
 
-        <div data-step-panel="3" class="hidden">
+            <!-- Cuerpo -->
             <div class="flex items-center justify-between mb-3 gap-3 flex-wrap">
                 <h3 class="font-bold text-gray-800">Cuerpo de la Carta Documento</h3>
                 <label class="inline-flex items-center gap-2 text-sm text-gray-600 cursor-pointer select-none shrink-0">
@@ -330,9 +232,10 @@
                 </label>
             </div>
             <p class="text-xs text-gray-400 mb-3" id="print-preview-hint">Activá el switch para ver el ancho real de impresión (podés deslizar el dedo para recorrerlo).</p>
-            <div id="editor-scroll-container" class="mb-8">
+            <div id="editor-scroll-container" class="mb-6">
                 <div class="bg-white border rounded-xl shadow-sm" id="editor-width-wrapper">
-                    <!-- Toolbar -->
+                    <!-- Toolbar + editor: markup idéntico a cd.html (editor.js
+                         depende de estos ids exactos). -->
                     <div id="toolbar" class="flex items-center gap-1 border-b border-gray-200 p-2">
                         <button type="button" data-cmd="bold" class="editor-btn shrink-0 w-10 h-10 rounded hover:bg-gray-100 flex items-center justify-center" style="touch-action:manipulation;" aria-label="Negrita">
                             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4h8a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"/><path d="M6 12h9a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"/></svg>
@@ -404,121 +307,55 @@
                     <div id="editor" contenteditable="true" class="p-4" style="font-size:10pt; line-height:1.15; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;"></div>
                 </div>
             </div>
-        </div><!-- /panel 3 -->
 
-        <div data-step-panel="4" class="hidden">
-            <div class="bg-emerald-50 border border-emerald-100 rounded-xl p-4 mb-6 text-sm text-emerald-900">
-                Revisá que los datos estén completos y elegí el correo con el que vas a presentar la Carta Documento.
+            <!-- Guardar cambios: solo visible si el link es de edición -->
+            <div class="flex justify-end mb-6">
+                <button type="button" id="btn-save-shared" class="hidden bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2.5 px-5 rounded-lg text-sm transition-colors">
+                    Guardar cambios
+                </button>
             </div>
-            <!-- Botones de Acción -->
+
+            <!-- Imprimir / vista previa -->
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            
-            <!-- Grupo Andreani -->
-            <div class="flex rounded-lg overflow-hidden shadow-sm border border-red-200">
-                <button class="bg-red-600 hover:bg-red-700 text-white font-medium py-3 px-4 flex-1 transition-colors" onclick="generatePDF('cd_correo_andreani')">
-                    Imprimir en Andreani
-                </button>
-                <button class="bg-red-700 hover:bg-red-800 text-white px-4 flex items-center justify-center transition-colors border-l border-red-500" 
-                        onclick="openPreviewModal('cd_correo_andreani')" title="Vista previa inmersiva">
-                    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
-                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                        <circle cx="12" cy="12" r="3"></circle>
-                    </svg>
-                </button>
-            </div>
-
-            <!-- Grupo Correo Argentino -->
-            <div class="flex rounded-lg overflow-hidden shadow-sm border border-blue-200">
-                <button class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 flex-1 transition-colors" onclick="generatePDF('cd_correo_arg')">
-                    Imprimir en Correo Arg.
-                </button>
-                <button class="bg-blue-700 hover:bg-blue-800 text-white px-4 flex items-center justify-center transition-colors border-l border-blue-500" 
-                        onclick="openPreviewModal('cd_correo_arg')" title="Vista previa inmersiva">
-                    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
-                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                        <circle cx="12" cy="12" r="3"></circle>
-                    </svg>
-                </button>
-            </div>
-        </div>
-
-        <!-- ========================================== -->
-        <!-- GUARDAR CARTA + COMPARTIR (Fase 3) -->
-        <!-- ========================================== -->
-        <div class="mt-6 pt-6 border-t border-gray-100" id="save-letter-section">
-            <div class="flex items-center justify-between gap-3 flex-wrap mb-3">
-                <h3 class="font-bold text-gray-800 text-sm">Guardar esta carta</h3>
-                <span id="save-letter-status" class="text-xs text-gray-400"></span>
-            </div>
-
-            <div id="save-letter-logged-out" class="text-sm text-gray-500">
-                <a href="login.html" class="text-blue-600 font-medium hover:underline">Iniciá sesión</a>
-                para guardar tus cartas y poder compartirlas.
-            </div>
-
-            <div id="save-letter-logged-in" class="hidden">
-                <div class="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
-                    <label class="text-sm text-gray-600 flex items-center gap-2">
-                        <span>Guardar para:</span>
-                        <select id="save-letter-courier" class="h-9 rounded border border-gray-300 text-sm px-2">
-                            <option value="cd_correo_arg">Correo Argentino</option>
-                            <option value="cd_correo_andreani">Andreani</option>
-                        </select>
-                    </label>
-                    <button type="button" id="btn-save-letter" class="bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2 px-4 rounded-lg text-sm transition-colors">
-                        Guardar carta
+                <div class="flex rounded-lg overflow-hidden shadow-sm border border-red-200">
+                    <button class="bg-red-600 hover:bg-red-700 text-white font-medium py-3 px-4 flex-1 transition-colors" onclick="generatePDF('cd_correo_andreani')">
+                        Imprimir en Andreani
+                    </button>
+                    <button class="bg-red-700 hover:bg-red-800 text-white px-4 flex items-center justify-center transition-colors border-l border-red-500"
+                            onclick="openPreviewModal('cd_correo_andreani')" title="Vista previa inmersiva">
+                        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                            <circle cx="12" cy="12" r="3"></circle>
+                        </svg>
                     </button>
                 </div>
-
-                <p id="share-link-hint" class="hidden text-xs text-gray-400 mt-3">
-                    Guardá la carta para poder generar un link para compartirla.
-                </p>
-
-                <div id="share-link-section" class="hidden mt-4 pt-4 border-t border-gray-100">
-                    <h4 class="font-semibold text-gray-800 text-sm mb-2">Compartir</h4>
-                    <div class="flex flex-col sm:flex-row gap-2">
-                        <select id="share-link-permission" class="h-9 rounded border border-gray-300 text-sm px-2">
-                            <option value="view">Solo ver</option>
-                            <option value="edit">Ver y editar</option>
-                        </select>
-                        <button type="button" id="btn-create-share-link" class="bg-gray-800 hover:bg-gray-900 text-white text-sm font-medium py-2 px-4 rounded-lg transition-colors">
-                            Generar link
-                        </button>
-                    </div>
-                    <ul id="share-link-list" class="mt-3 space-y-2"></ul>
+                <div class="flex rounded-lg overflow-hidden shadow-sm border border-blue-200">
+                    <button class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 flex-1 transition-colors" onclick="generatePDF('cd_correo_arg')">
+                        Imprimir en Correo Arg.
+                    </button>
+                    <button class="bg-blue-700 hover:bg-blue-800 text-white px-4 flex items-center justify-center transition-colors border-l border-blue-500"
+                            onclick="openPreviewModal('cd_correo_arg')" title="Vista previa inmersiva">
+                        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                            <circle cx="12" cy="12" r="3"></circle>
+                        </svg>
+                    </button>
                 </div>
             </div>
-        </div>
-        </div><!-- /panel 4 -->
-
-        <p id="wizard-error" class="hidden text-sm text-red-600 mt-6"></p>
-        <div class="flex items-center justify-between mt-3">
-            <button type="button" id="wizard-btn-prev" class="hidden inline-flex items-center gap-2 px-4 py-2.5 rounded-lg border border-gray-300 text-gray-700 font-medium hover:bg-gray-50 transition-colors">
-                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"></path></svg>
-                Anterior
-            </button>
-            <button type="button" id="wizard-btn-next" class="ml-auto inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium transition-colors">
-                Siguiente
-                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"></path></svg>
-            </button>
-        </div>
+        </div><!-- /compartir-content -->
     </main>
 
     <!-- ========================================== -->
-    <!-- MODAL DE VISTA PREVIA INMERSIVA -->
+    <!-- MODAL DE VISTA PREVIA INMERSIVA (idéntico a cd.html) -->
     <!-- ========================================== -->
     <div id="preview-modal" class="fixed inset-0 z-50 hidden bg-gray-900/60 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6 opacity-0 transition-opacity duration-300">
-        
         <div class="bg-white rounded-xl shadow-2xl w-full max-w-5xl h-[90vh] flex flex-col overflow-hidden transform scale-95 transition-transform duration-300" id="preview-modal-content">
-            
-            <!-- Modal Header -->
             <div class="flex items-center justify-between px-6 py-4 border-b bg-gray-50">
                 <div>
                     <h3 class="font-bold text-lg text-gray-800" id="modal-title">Vista Previa</h3>
                     <p class="text-xs text-gray-500">Revisá la alineación antes de usar el formulario original.</p>
                 </div>
                 <div class="flex items-center gap-3">
-                    <!-- Botón Descargar -->
                     <button id="modal-download-btn" class="bg-gray-800 hover:bg-gray-900 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm flex items-center gap-2">
                         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
@@ -527,8 +364,6 @@
                         </svg>
                         <span>Descargar PDF</span>
                     </button>
-
-                    <!-- BOTÓN CERRAR CLICKEABLE CON TEXTO -->
                     <button onclick="closeModal()" class="flex items-center gap-1.5 text-gray-600 hover:text-gray-900 hover:bg-gray-200 px-3 py-2 rounded-lg text-sm font-medium transition-colors border border-gray-300">
                         <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                             <path d="M18 6L6 18M6 6l12 12"></path>
@@ -537,15 +372,11 @@
                     </button>
                 </div>
             </div>
-
-            <!-- Modal Body (Canvas de PDF.js, renderiza igual en desktop y mobile) -->
             <div class="flex-1 bg-gray-200 p-4 sm:p-8 flex justify-center overflow-auto">
                 <div class="bg-white shadow-lg rounded-sm" id="pdf-preview-wrapper">
                     <canvas id="pdf-preview-canvas" class="block"></canvas>
                 </div>
             </div>
-
-            <!-- Navegación de páginas: solo visible si el PDF tiene más de 1 -->
             <div id="pdf-page-nav" class="hidden items-center justify-center gap-4 px-6 py-3 border-t bg-gray-50">
                 <button type="button" id="pdf-prev-page" class="p-2 rounded-lg hover:bg-gray-200 text-gray-600 disabled:opacity-40 disabled:hover:bg-transparent transition-colors" aria-label="Página anterior">
                     <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"></path></svg>
@@ -560,6 +391,9 @@
 
     <!-- ========================================== -->
     <!-- MODAL DE CONFIRMACIÓN: datos ya cargados vs. extracción con IA -->
+    <!-- (index.js habilita drag&drop de archivos en toda la página, así
+         que este modal tiene que existir acá también aunque esta página
+         no tenga el botón de "Subilo" del topbar.) -->
     <!-- ========================================== -->
     <div id="extract-confirm-modal" class="fixed inset-0 z-50 hidden bg-gray-900/60 backdrop-blur-sm flex items-center justify-center p-4 opacity-0 transition-opacity duration-300">
         <div class="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden transform scale-95 transition-transform duration-300" id="extract-confirm-modal-content">
@@ -591,9 +425,6 @@
     <script src="js/editor.js"></script>
     <script src="js/index.js"></script>
     <script src="js/wizard.js"></script>
-    <script src="js/letters.js"></script>
-    <script>
-    //    document.getElementById("nombre_rt").focus();
-    </script>
+    <script src="js/compartir.js"></script>
 </body>
 </html>
