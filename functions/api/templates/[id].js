@@ -68,7 +68,7 @@ export async function onRequestPut(context) {
         }
 
         const { name, remitente, destinatario, cuerpo_html } = body ?? {};
-        const updates = { updatedAt: Date.now() };
+        const updates = { updatedAt: new Date() };
 
         if (name !== undefined) {
             if (typeof name !== 'string' || name.trim() === '') {

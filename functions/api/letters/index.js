@@ -71,7 +71,7 @@ export async function onRequestPost(context) {
             return json({ error: 'cuerpo_html es requerido' }, 400);
         }
 
-        const now = Date.now();
+        const now = new Date();
         const db = getDb(context.env);
 
         const [inserted] = await db

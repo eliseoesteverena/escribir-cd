@@ -32,13 +32,16 @@ async function findOwnedLetter(context, session, db) {
 }
 
 // Convierte lo que mande el cliente para expires_at (ISO string, ms number,
-// o null/ausente = no expira) a un timestamp en ms o null. Tira si es inválido.
+// o null/ausente = no expira) a un Date o null. Tira si es inválido.
+// OJO: tiene que devolver un Date, no un número — las columnas
+// mode:'timestamp_ms' de Drizzle llaman value.getTime() internamente al
+// escribir, y eso rompe (TypeError) si value es un número plano.
 function parseExpiresAt(value) {
     if (value === undefined || value === null) return null;
-    if (typeof value === 'number' && Number.isFinite(value)) return value;
+    if (typeof value === 'number' && Number.isFinite(value)) return new Date(value);
     if (typeof value === 'string') {
         const ms = Date.parse(value);
-        if (!Number.isNaN(ms)) return ms;
+        if (!Number.isNaN(ms)) return new Date(ms);
     }
     throw new Error('invalid');
 }
@@ -102,7 +105,7 @@ export async function onRequestPost(context) {
                 token: crypto.randomUUID(),
                 permission,
                 expiresAt,
-                createdAt: Date.now(),
+                createdAt: new Date(),
             })
             .returning();
 

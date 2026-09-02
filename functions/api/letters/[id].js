@@ -75,7 +75,7 @@ export async function onRequestPut(context) {
         }
 
         const { courier, remitente, destinatario, cuerpo_html } = body ?? {};
-        const updates = { updatedAt: Date.now() };
+        const updates = { updatedAt: new Date() };
 
         if (courier !== undefined) {
             if (!COURIERS.has(courier)) {
