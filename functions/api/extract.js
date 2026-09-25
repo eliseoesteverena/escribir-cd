@@ -5,7 +5,7 @@ export async function onRequestPost(context) {
     return new Response("API key no configurada", { status: 500 });
   }
   
-  const endpoint = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent";
+  const endpoint = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent";
   
   // Leer el body que te manda el frontend
   const inputContent = await context.request.json();
